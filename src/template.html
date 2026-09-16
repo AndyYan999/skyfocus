@@ -6,114 +6,110 @@
 <title>SKYFOCUS — focus flight timer</title>
 <style>
   :root{
-    --bg:#050a14; --deep:#070e1c; --panel:rgba(13,21,35,.86); --panel-solid:#0e1626;
-    --line:#1e2b45; --line2:#2b3c5c; --land:#132133; --coast:#33507a; --border-col:#22334d;
+    --bg:#050a14; --deep:#070e1c; --panel:rgba(13,21,35,.88); --line:#1e2b45; --line2:#2b3c5c;
     --ink:#e8eef8; --dim:#8ba0bf; --dim2:#63779a;
-    --amber:#ffb347; --blue:#4da3ff; --green:#48d597; --red:#ff6b6b;
+    --amber:#ffb347; --blue:#4da3ff; --green:#48d597; --red:#ff6b6b; --violet:#a78bfa;
     --paper:#f4f1e8; --paper-ink:#141a22; --paper-dim:#6b7280; --paper-line:#cfc9b8;
     --ease:cubic-bezier(.4,0,.2,1); --dur:.22s;
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
-    --top-h:54px;
+    --top-h:54px; --bar-h:118px;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
   body{
-    background:
-      radial-gradient(1200px 800px at 12% -15%, #16233c 0%, transparent 60%),
-      radial-gradient(1000px 700px at 105% 5%, #1a2138 0%, transparent 55%),
-      var(--bg);
+    background:radial-gradient(1200px 800px at 12% -15%, #16233c 0%, transparent 60%),
+               radial-gradient(1000px 700px at 105% 5%, #1a2138 0%, transparent 55%), var(--bg);
     color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased;
     height:100dvh; display:flex; flex-direction:column; overflow:hidden;
   }
-
-  /* ---------------- top bar ---------------- */
-  header.top{
-    flex:0 0 auto; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
-    padding:9px 16px; border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg,#0f1a2c,#0a1220);
-    height:var(--top-h);
-  }
-  .brand{display:flex;align-items:center;gap:9px;font-family:var(--mono);letter-spacing:.16em;font-size:12.5px}
+  /* ---------- top bar ---------- */
+  header.top{flex:0 0 auto;display:flex;align-items:center;gap:10px;flex-wrap:nowrap;
+    padding:0 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0f1a2c,#0a1220);height:var(--top-h)}
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--mono);letter-spacing:.16em;font-size:12.5px;flex:0 0 auto}
   .brand .mark{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;
-    background:linear-gradient(140deg,var(--amber),#ff8a3d);color:#20160a;font-size:15px;
-    box-shadow:0 6px 18px rgba(255,138,61,.25)}
+    background:linear-gradient(140deg,var(--amber),#ff8a3d);color:#20160a;font-size:15px;box-shadow:0 6px 18px rgba(255,138,61,.25)}
   .brand b{font-weight:700}
   .brand small{display:block;color:var(--dim2);letter-spacing:.1em;font-size:9.5px;margin-top:1px}
-  .grow{flex:1}
+  .grow{flex:1;min-width:6px}
   .chip{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--dim);
-    border:1px solid var(--line2);border-radius:999px;padding:6px 11px;background:#0b1424;
+    border:1px solid var(--line2);border-radius:999px;padding:6px 11px;background:#0b1424;white-space:nowrap;
     transition:color var(--dur) var(--ease),border-color var(--dur) var(--ease),background var(--dur) var(--ease)}
   .chip.live{color:var(--amber);border-color:#5a4420;background:#1a1408}
   .chip.ok{color:var(--green);border-color:#1d4a37;background:#0a1d16}
-
+  .chip.btn{cursor:pointer}
+  .chip.btn:hover{border-color:#3a4d70;background:#141f34;color:var(--ink)}
+  .chip.off{opacity:.55}
   button{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--ink);cursor:pointer;
     background:#152238;border:1px solid var(--line2);border-radius:10px;padding:10px 14px;
-    transition:background var(--dur) var(--ease),border-color var(--dur) var(--ease),color var(--dur) var(--ease),
-               transform .12s var(--ease),box-shadow var(--dur) var(--ease)}
+    transition:background var(--dur) var(--ease),border-color var(--dur) var(--ease),color var(--dur) var(--ease),transform .12s var(--ease)}
   button:hover{background:#1c2c48;border-color:#3a4d70}
   button:active{transform:scale(.9)}
-  button:disabled{opacity:.45;cursor:default;transform:none}
   button.primary{background:linear-gradient(140deg,var(--amber),#ff9a3c);color:#22160a;border-color:#ffc27a;font-weight:700}
-  button.primary:hover{background:linear-gradient(140deg,#ffc163,#ffa552);box-shadow:0 8px 24px rgba(255,154,60,.28)}
+  button.primary:hover{background:linear-gradient(140deg,#ffc163,#ffa552)}
   button.ghost{background:transparent}
   button.ghost:hover{background:#141f34}
   button.danger{color:#ffc9c9;border-color:#4a2430;background:#1c1116}
   button.danger:hover{background:#2a151c;border-color:#6d2f3d}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-
-  /* ---------------- screens ---------------- */
+  button:disabled{opacity:.55;cursor:default;transform:none}
+  button.primary:disabled{background:#26364f;color:#8496b0;border-color:var(--line2);box-shadow:none}
+  button.sm{padding:7px 10px;font-size:11px}
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
   main{flex:1 1 auto;min-height:0;position:relative}
   .screen{display:none}
   .screen.active{display:block;height:100%;overflow:auto}
+  .screen.map.active{display:block;position:relative;overflow:hidden;height:100%}
   .pad{padding:16px}
   @media (prefers-reduced-motion: reduce){*{animation-duration:.001s!important;transition-duration:.001s!important}}
 
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
-  .panel h2{margin:0 0 4px;font-size:12.5px;font-family:var(--mono);letter-spacing:.16em;color:var(--dim)}
-  .panel .sub{color:var(--dim2);font-size:12px;margin:0 0 12px}
+  /* ---------- home: map + time bar ---------- */
+  #homeMap{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+  #homeMap.dragging{cursor:grabbing}
+  .homestrip{position:absolute;left:14px;top:14px;display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100% - 90px)}
+  .legend{background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:9px 12px;
+    font-family:var(--mono);font-size:10.5px;color:var(--dim);backdrop-filter:blur(9px)}
+  .legend b{color:var(--ink)}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle;
+    background:var(--amber);box-shadow:0 0 8px rgba(255,179,71,.6)}
+  .dot.dim{background:#54688a;box-shadow:none}
+  .dot.home{background:var(--green);box-shadow:0 0 8px rgba(72,213,151,.6)}
+  .mapbtns{position:absolute;right:14px;bottom:calc(var(--bar-h) + 14px);display:flex;flex-direction:column;gap:6px}
+  .mapbtns button{padding:8px 11px;background:var(--panel);backdrop-filter:blur(9px)}
+  .bottombar{position:absolute;left:12px;right:12px;bottom:12px;background:var(--panel);
+    border:1px solid var(--line2);border-radius:16px;padding:12px 16px;backdrop-filter:blur(10px);
+    box-shadow:0 14px 40px rgba(0,0,0,.5);display:grid;grid-template-columns:minmax(280px,1.1fr) minmax(260px,1.3fr) auto;gap:16px;align-items:center}
+  @media (max-width:900px){.bottombar{grid-template-columns:1fr;gap:10px;--bar-h:260px}}
+  .klabel{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--dim2)}
+  .timeval{font-family:var(--mono);font-size:22px;margin:2px 0 6px;font-variant-numeric:tabular-nums}
+  .timeval small{font-size:11px;color:var(--dim);letter-spacing:.1em}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:999px;
+    background:linear-gradient(90deg,#2f6fbf,var(--amber));outline:none;margin:2px 0 6px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+    background:#fff;border:3px solid var(--amber);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--amber);cursor:pointer}
+  .reachline{font-family:var(--mono);font-size:10.5px;color:var(--dim2)}
+  .reachline b{color:var(--ink)}
+  .destcard{background:#111c2e;border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:74px;
+    display:flex;flex-direction:column;justify-content:center;gap:3px}
+  .destcard .dc-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .destcard .dc-code{font-family:var(--mono);font-size:20px;font-weight:700}
+  .destcard .dc-city{font-size:13px;color:var(--ink)}
+  .destcard .dc-meta{font-family:var(--mono);font-size:10.5px;color:var(--dim2)}
+  .destcard .dc-hint{font-family:var(--mono);font-size:11.5px;color:var(--dim2)}
+  .bar-actions{display:flex;flex-direction:column;gap:8px}
 
-  /* ---------------- departure board ---------------- */
-  .board{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,1fr);gap:16px;height:100%}
-  @media (max-width:1000px){.board{grid-template-columns:1fr;height:auto}}
-  .board-left{display:flex;flex-direction:column;min-height:0}
-  .originbox{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
-  select{font-family:var(--mono);font-size:13px;color:var(--ink);background:#0b1424;border:1px solid var(--line2);
-    border-radius:10px;padding:10px 12px;transition:border-color var(--dur) var(--ease),background var(--dur) var(--ease)}
-  select:hover{border-color:#3a4d70}
-  .originmeta{font-family:var(--mono);font-size:11px;color:var(--dim2)}
-  .dlist{display:flex;flex-direction:column;gap:8px;overflow:auto;padding-right:6px;flex:1;min-height:0}
-  .drow{display:grid;grid-template-columns:78px minmax(0,1fr) auto auto;gap:12px;align-items:center;text-align:left;
-    background:#111c2e;border:1px solid var(--line);border-radius:12px;padding:12px 14px;width:100%}
-  .drow:hover{border-color:#3f5a86;background:#16223a}
-  .drow .code{font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:.06em}
-  .drow .code small{display:block;font-weight:400;color:var(--dim2);font-size:10px;letter-spacing:.08em;margin-top:2px}
-  .drow .city{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .drow .city em{display:block;font-style:normal;color:var(--dim2);font-size:11px;font-family:var(--mono);margin-top:3px}
-  .drow .real{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:right;line-height:1.5}
-  .drow .real b{display:block;color:var(--ink);font-size:13px}
-  .focuspill{font-family:var(--mono);font-size:12px;color:#20160a;background:linear-gradient(140deg,var(--amber),#ffa14a);
-    border-radius:8px;padding:7px 10px;min-width:76px;text-align:center;font-weight:700}
-  .focuspill span{display:block;font-size:9px;letter-spacing:.1em;font-weight:500;color:#3d2a10}
-
-  .kv{background:#111c2e;border:1px solid var(--line);border-radius:10px;padding:9px 11px}
-  .kv label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--dim2);margin-bottom:4px}
-  .kv .v{font-family:var(--mono);font-size:13.5px}
-  .note{color:var(--dim2);font-size:11.5px;font-family:var(--mono);margin-top:10px;line-height:1.6}
-
-  /* ---------------- boarding pass ---------------- */
+  /* ---------- pass ---------- */
   .passstage{display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;padding:18px 16px 26px;min-height:100%}
-  .pass{position:relative;width:100%;max-width:1060px;background:var(--paper);color:var(--paper-ink);
-    border-radius:16px;display:grid;grid-template-columns:minmax(0,1fr) 232px;overflow:hidden;
-    box-shadow:0 22px 60px rgba(0,0,0,.55)}
+  .pass{position:relative;width:100%;max-width:1060px;background:var(--paper);color:var(--paper-ink);border-radius:16px;
+    display:grid;grid-template-columns:minmax(0,1fr) 232px;overflow:hidden;box-shadow:0 22px 60px rgba(0,0,0,.55)}
   @media (max-width:760px){.pass{grid-template-columns:1fr}}
   .pass .main{padding:20px 22px}
   .pass .stub{padding:18px 16px;background:#e9e5d8;border-left:2px dashed #b9b3a2;position:relative}
   .pass .stub::before,.pass .stub::after{content:"";position:absolute;left:-11px;width:22px;height:22px;border-radius:50%;background:var(--bg)}
   .pass .stub::before{top:-11px}
   .pass .stub::after{bottom:-11px}
-  .pass .carrier{display:flex;align-items:center;justify-content:space-between;gap:12px;
-    font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:#3c4657;border-bottom:1px solid var(--paper-line);padding-bottom:11px}
+  .pass .carrier{display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:var(--mono);
+    font-size:11px;letter-spacing:.18em;color:#3c4657;border-bottom:1px solid var(--paper-line);padding-bottom:11px}
   .pass .route{display:flex;align-items:flex-end;gap:14px;margin:14px 0 4px;font-family:var(--mono)}
   .pass .route .code{font-size:clamp(30px,5.2vw,48px);font-weight:700;line-height:1}
   .pass .route .arrow{flex:1;text-align:center;color:#8d8574;font-size:13px;padding-bottom:5px;position:relative}
@@ -128,45 +124,40 @@
   .fields .f .v{font-family:var(--mono);font-size:13px;overflow:hidden;text-overflow:ellipsis}
   .fields .f .v.big{font-size:19px;font-weight:700}
   .nameinput{font-family:var(--mono);font-size:13px;color:var(--paper-ink);background:#efebdd;border:1px solid transparent;
-    border-bottom:1px dashed #a39b88;border-radius:6px 6px 0 0;padding:4px 6px;width:100%;
-    transition:border-color var(--dur) var(--ease),background var(--dur) var(--ease)}
+    border-bottom:1px dashed #a39b88;border-radius:6px 6px 0 0;padding:4px 6px;width:100%}
   .nameinput:focus{outline:none;border-color:var(--amber);background:#fff8e6}
   .lapse{display:flex;align-items:center;gap:8px;margin-top:12px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
     color:#5c5648;background:#e4dfd0;border-radius:8px;padding:9px 11px}
   .lapse b{color:#20160a}
   .barcode{display:flex;gap:2px;height:52px;margin-top:12px;align-items:stretch}
   .barcode i{background:#141a22;display:block}
-  .stub .klabel{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:#8d8574}
   .stub .kval{font-family:var(--mono);font-size:12.5px;margin-bottom:9px}
   .stub .code-big{font-family:var(--mono);font-size:36px;font-weight:700;letter-spacing:.04em;margin:2px 0 0}
   .stub .vseats{position:absolute;right:7px;bottom:12px;writing-mode:vertical-rl;font-family:var(--mono);
     font-size:10px;letter-spacing:.24em;color:#a49c88}
   .warnline{display:none;color:#8a5a12;font-size:10.5px;font-family:var(--mono);margin-top:5px}
   .warnline.on{display:block}
+  .subjectbox{width:100%;max-width:1060px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .subjectbox .sub{color:var(--dim2);font-size:11.5px;margin:2px 0 10px}
+  .chips{display:flex;gap:7px;flex-wrap:wrap}
+  .chipbtn{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:6px 10px;border-radius:999px;
+    border:1px solid var(--line2);background:#111c2e;color:var(--dim);cursor:pointer;
+    transition:all var(--dur) var(--ease)}
+  .chipbtn:hover{border-color:#3a4d70;color:var(--ink)}
+  .chipbtn.on{background:linear-gradient(140deg,var(--amber),#ffa14a);color:#20160a;border-color:#ffc27a;font-weight:700}
+  .subjectinput{font-family:var(--mono);font-size:12.5px;color:var(--ink);background:#0b1424;border:1px solid var(--line2);
+    border-radius:10px;padding:9px 11px;min-width:200px;flex:1}
+  .subjectinput:focus{outline:none;border-color:var(--amber)}
 
-  /* arrival stamp */
-  .stampwrap{position:absolute;inset:0;pointer-events:none}
-  .stamp{position:absolute;right:calc(232px + 14px);top:20px;font-family:var(--mono);font-size:clamp(20px,2.6vw,30px);
-    font-weight:700;letter-spacing:.16em;color:#c93f22;border:4px double #c93f22;border-radius:12px;padding:9px 16px;
-    transform:rotate(-12deg);opacity:0;transition:opacity .5s var(--ease);
-    text-shadow:0 0 18px rgba(216,73,42,.18);background:rgba(244,241,232,.62)}
-  @media (max-width:760px){.stamp{right:14px}}
-  .stamp.show{opacity:.9}
-  .stamp.diverted{color:#b87212;border-color:#b87212;text-shadow:0 0 24px rgba(184,114,18,.22)}
-  .stamp small{display:block;font-size:11px;letter-spacing:.22em;text-align:center;margin-top:6px;font-weight:500}
-
-  /* ---------------- flight screen (full-bleed map) ---------------- */
+  /* ---------- flight (fixed full-window) ---------- */
   #screen-flight{position:fixed;inset:0;z-index:60;display:none;background:var(--deep);overflow:hidden}
   #screen-flight.active{display:block}
   #map{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
-  #map.dragging{cursor:grabbing}
   .hud{position:absolute;background:var(--panel);border:1px solid var(--line2);border-radius:14px;
     padding:12px 14px;backdrop-filter:blur(9px);box-shadow:0 12px 34px rgba(0,0,0,.45)}
-  .hud.tl{left:14px;top:14px;max-width:min(420px,42vw)}
-  .hud.tr{right:14px;top:14px;text-align:right;min-width:250px}
-  .hud .klabel{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--dim2)}
+  .hud.tl{left:14px;top:14px;max-width:min(430px,44vw)}
+  .hud.tr{right:14px;top:14px;text-align:right;min-width:min(300px,50vw)}
   .hud .route-line{font-family:var(--mono);font-size:13px;margin:3px 0 8px}
-  .hud .route-line b{color:var(--ink)}
   .flightstats{display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;font-family:var(--mono);font-size:11.5px}
   .flightstats span{color:var(--dim2);letter-spacing:.1em;font-size:9px;display:block}
   .flightstats b{font-weight:500;font-variant-numeric:tabular-nums}
@@ -174,36 +165,81 @@
   .phase-chip{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.16em;padding:4px 9px;border-radius:999px;
     border:1px solid #5a4420;color:var(--amber);background:#1a1408;margin-bottom:8px}
   .phase-chip.hold{border-color:#3a4d70;color:var(--dim);background:#0e1626}
-
-  .bottombar{position:absolute;left:14px;right:14px;bottom:14px;background:var(--panel);border:1px solid var(--line2);
-    border-radius:16px;padding:12px 16px 10px;backdrop-filter:blur(9px);box-shadow:0 12px 34px rgba(0,0,0,.45)}
-  .pb-ends{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:11px;
-    letter-spacing:.1em;color:var(--dim);margin-bottom:9px}
+  .speaker{display:inline-block;margin-left:6px;font-size:11px;color:var(--violet)}
+  .bottombar.flight{position:absolute;left:14px;right:14px;bottom:14px;background:var(--panel);border:1px solid var(--line2);
+    border-radius:16px;padding:12px 16px 10px;backdrop-filter:blur(9px);box-shadow:0 12px 34px rgba(0,0,0,.45);display:block}
+  .pb-ends{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--dim);margin-bottom:9px}
   .pb-ends b{color:var(--ink);font-size:14px}
   .pb-track{position:relative;height:6px;border-radius:999px;background:#1b2740;margin:0 4px}
   .pb-fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:999px;background:linear-gradient(90deg,#2f6fbf,var(--amber))}
-  .pb-plane{position:absolute;top:50%;left:0;width:22px;height:22px;margin:-11px 0 0 -11px;fill:#fff;
-    filter:drop-shadow(0 0 7px rgba(255,255,255,.55))}
+  .pb-plane{position:absolute;top:50%;left:0;width:22px;height:22px;margin:-11px 0 0 -11px;fill:#fff;filter:drop-shadow(0 0 7px rgba(255,255,255,.55))}
   .pb-ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--dim2);margin-top:9px}
-  .pb-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:11px}
-  .mapbtns{position:absolute;left:14px;bottom:112px;display:flex;flex-direction:column;gap:6px}
-  .mapbtns button{padding:8px 11px;font-size:12px;background:var(--panel);backdrop-filter:blur(9px)}
 
-  /* ---------------- logbook ---------------- */
+  /* ---------- landed ---------- */
+  .landedgrid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr);gap:16px}
+  @media (max-width:1000px){.landedgrid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .panel h2{margin:0 0 4px;font-size:12.5px;font-family:var(--mono);letter-spacing:.16em;color:var(--dim)}
+  .panel .sub{color:var(--dim2);font-size:12px;margin:0 0 12px}
+  .stampwrap{position:absolute;left:0;right:232px;top:0;bottom:0;pointer-events:none;display:grid;
+    place-items:end center;padding-bottom:16px}
+  @media (max-width:760px){.stampwrap{right:0}}
+  .stamp{font-family:var(--mono);font-size:clamp(18px,2.1vw,26px);font-weight:700;letter-spacing:.16em;
+    color:#c93f22;border:4px double #c93f22;border-radius:12px;padding:8px 15px;transform:rotate(-12deg);
+    opacity:0;transition:opacity .5s var(--ease);text-shadow:0 0 16px rgba(216,73,42,.12);background:rgba(244,241,232,.42)}
+  .stamp.show{opacity:.72}
+  .stamp.diverted{color:#b87212;border-color:#b87212}
+  .stamp small{display:block;font-size:11px;letter-spacing:.22em;text-align:center;margin-top:6px;font-weight:500}
+  @media (max-width:760px){.stamp{right:14px}}
+  .turnaround{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#111c2e;border:1px solid var(--line);border-radius:12px;padding:13px}
+  .turnaround .t{font-family:var(--mono);font-size:26px;font-variant-numeric:tabular-nums}
+  .turnaround.done{border-color:#1d4a37;background:#0a1d16}
   .loglist{display:flex;flex-direction:column;gap:8px}
   .logpass{display:grid;grid-template-columns:96px minmax(0,1fr) auto auto;gap:12px;align-items:center;
-    background:#111c2e;border:1px solid var(--line);border-radius:12px;padding:10px 13px;font-family:var(--mono);font-size:11.5px;
-    position:relative;overflow:hidden}
+    background:#111c2e;border:1px solid var(--line);border-radius:12px;padding:10px 13px;font-family:var(--mono);font-size:11.5px;position:relative;overflow:hidden}
   .logpass::before{content:"";position:absolute;left:88px;top:0;bottom:0;border-left:1px dashed #24354e}
   .logpass .lp-route{font-size:12.5px;color:var(--ink)}
   .logpass .lp-route em{display:block;font-style:normal;color:var(--dim2);font-size:10px;margin-top:3px}
   .logpass .lp-min{color:var(--amber);font-size:13px}
   .tag{font-size:9.5px;letter-spacing:.1em;border-radius:6px;padding:3px 7px;border:1px solid #1d4a37;color:var(--green);background:#0a1d16}
   .tag.warn{border-color:#5a4420;color:var(--amber);background:#1a1408}
+  .tag.subj{border-color:#3b2f6b;color:var(--violet);background:#150f28}
   .empty{color:var(--dim2);font-family:var(--mono);font-size:11.5px;padding:14px 4px}
-  .turnaround{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#111c2e;border:1px solid var(--line);
-    border-radius:12px;padding:13px}
-  .turnaround .t{font-family:var(--mono);font-size:26px;font-variant-numeric:tabular-nums}
+  .note{color:var(--dim2);font-size:11.5px;font-family:var(--mono);margin-top:10px;line-height:1.6}
+
+  /* ---------- drawer + modal ---------- */
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,92vw);background:#0b1322;border-left:1px solid var(--line2);
+    z-index:80;transform:translateX(101%);transition:transform .28s var(--ease);display:flex;flex-direction:column;
+    box-shadow:-20px 0 60px rgba(0,0,0,.55)}
+  .drawer.open{transform:none}
+  .drawer .dhead{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .drawer .dbody{padding:14px;overflow:auto;flex:1}
+  .tabbtn{font-family:var(--mono);font-size:11px;letter-spacing:.1em;padding:7px 11px;border-radius:999px;border:1px solid var(--line2);
+    background:transparent;color:var(--dim);cursor:pointer}
+  .tabbtn.on{color:var(--ink);border-color:#3a4d70;background:#141f34}
+  .tabpane{display:none}
+  .tabpane.on{display:block}
+  .modal{position:fixed;inset:0;z-index:90;background:rgba(3,7,14,.72);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px}
+  .modal.open{display:flex}
+  .modal .box{width:min(620px,94vw);max-height:82vh;background:#0d1626;border:1px solid var(--line2);border-radius:16px;
+    display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .modal .mhead{display:flex;align-items:center;gap:10px;padding:13px 15px;border-bottom:1px solid var(--line)}
+  .modal .mbody{padding:12px 15px;overflow:auto}
+  .searchinput{font-family:var(--mono);font-size:13px;color:var(--ink);background:#0b1424;border:1px solid var(--line2);
+    border-radius:10px;padding:10px 12px;width:100%}
+  .searchinput:focus{outline:none;border-color:var(--amber)}
+  .result{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;text-align:left;
+    background:#111c2e;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-top:7px;cursor:pointer}
+  .result:hover{border-color:#3f5a86;background:#16223a}
+  .result .rcode{font-family:var(--mono);font-weight:700;font-size:13px}
+  .result .rcity{font-size:12.5px}
+  .result .rcity em{display:block;font-style:normal;color:var(--dim2);font-size:10px;font-family:var(--mono);margin-top:2px}
+  .result .rmeta{font-family:var(--mono);font-size:10.5px;color:var(--dim);text-align:right}
+  .manform{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+  .manform input{font-family:var(--mono);font-size:12.5px;color:var(--ink);background:#0b1424;border:1px solid var(--line2);
+    border-radius:10px;padding:9px 11px;width:100%}
+  .manform input:focus{outline:none;border-color:var(--amber)}
+  .manform label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--dim2);margin-bottom:4px}
 </style>
 </head>
 <body>
@@ -213,215 +249,271 @@
     <div><b>SKYFOCUS</b><small>FOCUS FLIGHT TIMER</small></div>
   </div>
   <div class="grow"></div>
-  <div class="chip" id="clockChip">--:--:--</div>
-  <div class="chip" id="statusChip">ON GROUND</div>
-  <button class="ghost" id="soundBtn">🔔 SOUND ON</button>
+  <div class="chip btn" id="fromChip" title="Change departure airport">FROM —</div>
+  <div class="chip" id="clockChip">--:--</div>
+  <div class="chip btn" id="soundBtn">🔔</div>
+  <div class="chip btn" id="voiceBtn">🎙 PILOT</div>
+  <div class="chip btn" id="logBtn">LOGBOOK</div>
+  <div class="chip btn" id="infoBtn">?</div>
 </header>
 
 <main>
-  <!-- ============ DEPARTURE BOARD ============ -->
-  <section class="screen active" id="screen-board">
-    <div class="pad" style="height:100%">
-      <div class="board">
-        <div class="panel board-left">
-          <h2>DEPARTURE BOARD</h2>
-          <p class="sub">Pick a leg from your current location. Real flying time is compressed into a focus session.</p>
-          <div class="originbox">
-            <label class="originmeta" for="originSel">FROM</label>
-            <select id="originSel"></select>
-            <span class="originmeta" id="originMeta"></span>
-          </div>
-          <div class="dlist" id="dlist"></div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:16px;min-height:0">
-          <div class="panel">
-            <h2>HOW IT WORKS</h2>
-            <p class="sub">A flight-shaped Pomodoro.</p>
-            <div class="kv"><label>COMPRESSION</label><div class="v">1 focus min = <b id="compLabel">15</b> min airborne</div></div>
-            <div class="kv" style="margin-top:9px"><label>THE FLIGHT</label>
-              <div class="v" style="font-size:12px">A white aircraft follows the real great-circle route on a world map, at the altitude and speed of that phase of flight. The clock only runs while airborne.</div></div>
-            <div class="kv" style="margin-top:9px"><label>CONTROLS</label>
-              <div class="v" style="font-size:12px">Pause (space) · +5 min (D) · reset (R) · divert (Esc) · drag/zoom the map</div></div>
-          </div>
-          <div class="panel" style="min-height:0;display:flex;flex-direction:column">
-            <h2>FLIGHT LOGBOOK</h2>
-            <p class="sub" id="totalNote">Total focus time logged: 0 min.</p>
-            <div class="loglist" id="logWrap" style="overflow:auto;min-height:0"></div>
-          </div>
-        </div>
+  <!-- ================= HOME : map + time bar ================= -->
+  <section class="screen map active" id="screen-home">
+    <canvas id="homeMap"></canvas>
+    <div class="homestrip">
+      <div class="legend" id="homeLegend"><span class="dot home"></span>you · <span class="dot"></span>in range · <span class="dot dim"></span>beyond range</div>
+      <div class="legend" id="homeStatus">TAP A DESTINATION ON THE MAP</div>
+    </div>
+    <div class="mapbtns">
+      <button id="homeZoomIn">＋</button>
+      <button id="homeZoomOut">－</button>
+      <button id="homeFit">FIT</button>
+    </div>
+    <div class="bottombar">
+      <div>
+        <div class="klabel">FOCUS TIME</div>
+        <div class="timeval"><b id="sliderVal">30</b> <small>MINUTES</small></div>
+        <input type="range" id="timeSlider" min="10" max="90" step="5" value="30">
+        <div class="reachline" id="reachLine">—</div>
+      </div>
+      <div class="destcard" id="destCard">
+        <div class="dc-hint">Tap a marker on the map to pick a leg, or search for any airport.</div>
+      </div>
+      <div class="bar-actions">
+        <button class="primary" id="bookBtn" disabled>▶ BOOK THIS FLIGHT</button>
+        <button id="addDestBtn">＋ DESTINATION</button>
+        <button class="ghost" id="geoBtn">◎ NEAREST AIRPORT</button>
       </div>
     </div>
   </section>
 
-  <!-- ============ BOARDING PASS ============ -->
+  <!-- ================= BOARDING PASS ================= -->
   <section class="screen" id="screen-pass">
     <div class="passstage">
       <div id="passHost" style="width:100%;display:flex;justify-content:center"></div>
+      <div class="subjectbox">
+        <div class="klabel">SESSION TYPE — WHAT IS THIS FLIGHT FOR?</div>
+        <div class="sub">Shown on the pass, in the logbook, and called out by the pilot.</div>
+        <div class="chips" id="subjectChips"></div>
+        <div class="row" style="margin-top:9px">
+          <input class="subjectinput" id="subjectInput" placeholder="custom type — e.g. chinese project" spellcheck="false">
+          <button class="sm" id="subjectSave">USE THIS TYPE</button>
+        </div>
+      </div>
       <div class="row" style="justify-content:center">
         <button class="primary" id="beginBtn">▶ BEGIN BOARDING</button>
-        <button class="ghost" id="presetBtn">FOCUS TIME −5</button>
-        <button class="ghost" id="presetAdd">+5</button>
-        <button class="ghost" id="backBtn">◀ CHANGE DESTINATION</button>
+        <button class="ghost" id="passBackBtn">◀ CHANGE DESTINATION</button>
+        <button class="ghost" id="passTimeDown">FOCUS −5</button>
+        <button class="ghost" id="passTimeUp">+5</button>
       </div>
-      <div class="note" style="max-width:860px;text-align:center">
-        Focus time follows the leg by default (base compression ×<span id="compLabel2">15</span>) — the ratio printed on the pass is this leg's exact one.
-        Adjust it here for a custom session; the aircraft still flies the same route.
-      </div>
+      <div class="note" style="max-width:860px;text-align:center" id="passNote"></div>
     </div>
   </section>
 
-  <!-- ============ ARRIVALS ============ -->
+  <!-- ================= IN FLIGHT ================= -->
+  <section class="screen" id="screen-flight">
+    <canvas id="map"></canvas>
+    <div class="hud tl">
+      <div class="klabel">NOW FLYING</div>
+      <div class="route-line" id="routeTxt">SZX → NRT · <b>Focus Airways FX0000</b></div>
+      <div class="flightstats">
+        <div><span>SESSION</span><b id="subjectTxt">—</b></div>
+        <div><span>ELAPSED</span><b id="elapsedTxt">00:00</b></div>
+        <div><span>GROUND SPEED</span><b id="spdTxt">0 km/h</b></div>
+        <div><span>ALTITUDE</span><b id="altTxt">0 ft</b></div>
+        <div><span>TO RUN</span><b id="distTxt">0 km</b></div>
+        <div><span>ETA</span><b id="etaTxt">--:--</b></div>
+      </div>
+    </div>
+    <div class="hud tr">
+      <div class="phase-chip" id="phaseBadge">TAXI</div><span class="speaker" id="speakerTag"></span>
+      <div class="klabel">TIME TO DESTINATION</div>
+      <div class="remain" id="remainTxt">00:25:00</div>
+      <div class="row" style="justify-content:flex-end;margin-top:11px">
+        <button class="primary" id="pauseBtn">⏸ PAUSE</button>
+        <button class="sm" id="delayBtn">+5 MIN</button>
+        <button class="sm ghost" id="resetBtn">↺ RESET</button>
+        <button class="sm danger" id="divertBtn">✕ DIVERT</button>
+      </div>
+    </div>
+    <div class="mapbtns">
+      <button id="zoomIn">＋</button>
+      <button id="zoomOut">－</button>
+      <button id="zoomFit">FIT</button>
+    </div>
+    <div class="bottombar flight">
+      <div class="pb-ends">
+        <span><b id="ribFrom">SZX</b> <span id="ribFromCity"></span></span>
+        <span id="ribPct">0%</span>
+        <span style="text-align:right"><span id="ribToCity"></span> <b id="ribTo">NRT</b></span>
+      </div>
+      <div class="pb-track">
+        <div class="pb-fill" id="ribFill"></div>
+        <svg class="pb-plane" id="ribPlane" viewBox="0 0 24 24" aria-hidden="true">
+          <path transform="rotate(90 12 12)" d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2A1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+        </svg>
+      </div>
+      <div class="pb-ticks"><span>TAXI</span><span>CLIMB</span><span>CRUISE</span><span>DESCENT</span><span>LANDING</span></div>
+    </div>
+  </section>
+
+  <!-- ================= ARRIVALS ================= -->
   <section class="screen" id="screen-landed">
     <div class="pad">
-      <div class="board" style="grid-template-columns:minmax(0,1.45fr) minmax(320px,1fr)">
+      <div class="landedgrid">
         <div style="display:flex;flex-direction:column;gap:14px">
           <div id="arrivalHost" style="display:flex;justify-content:center"></div>
           <div class="panel">
-            <div class="turnaround">
+            <h2>TURNAROUND</h2>
+            <p class="sub" id="breakSub">Optional break before the next leg.</p>
+            <div class="turnaround" id="breakBox">
               <div>
-                <label class="klabel" style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--dim2)">TURNAROUND BREAK</label>
+                <div class="klabel">BREAK</div>
                 <div class="t" id="breakTxt">05:00</div>
               </div>
               <button id="breakBtn" class="primary">☕ START BREAK</button>
-              <button class="ghost" id="skipBreakBtn">SKIP</button>
+              <button id="skipBreakBtn">SKIP BREAK ▶</button>
               <div class="grow"></div>
+              <div class="row">
+                <span class="klabel">LENGTH</span>
+                <button class="sm ghost breaklen" data-min="5">5</button>
+                <button class="sm ghost breaklen" data-min="10">10</button>
+                <button class="sm ghost breaklen" data-min="15">15</button>
+              </div>
+            </div>
+            <div class="note" id="breakNote"></div>
+            <div class="row" style="margin-top:12px">
               <button class="primary" id="nextBtn">✈ BOOK NEXT FLIGHT</button>
               <button class="ghost" id="repeatBtn">↻ REPEAT ROUTE</button>
             </div>
           </div>
         </div>
         <div class="panel" style="display:flex;flex-direction:column;min-height:0">
-          <h2>FLIGHT LOGBOOK</h2>
+          <h2>LOG</h2>
           <p class="sub" id="totalNote2">Total focus time logged: 0 min.</p>
-          <div class="loglist" id="logWrap2" style="overflow:auto;min-height:0"></div>
-          <div class="row" style="margin-top:12px"><button class="ghost" id="clearLogBtn">CLEAR LOGBOOK</button></div>
+          <div class="loglist" id="logWrap2"></div>
         </div>
       </div>
     </div>
   </section>
 </main>
 
-<!-- ============ IN FLIGHT (full-bleed world map) ============ -->
-<section class="screen" id="screen-flight">
-  <canvas id="map"></canvas>
-
-  <div class="hud tl">
-    <div class="klabel">NOW FLYING</div>
-    <div class="route-line" id="routeTxt">SZX → NRT · <b>Focus Airways FX0000</b></div>
-    <div class="flightstats">
-      <div><span>ELAPSED</span><b id="elapsedTxt">00:00:00</b></div>
-      <div><span>GROUND SPEED</span><b id="spdTxt">0 km/h</b></div>
-      <div><span>ALTITUDE</span><b id="altTxt">0 ft</b></div>
-      <div><span>TO RUN</span><b id="distTxt">0 km</b></div>
-      <div><span>OVERFLYING</span><b id="overTxt">—</b></div>
-      <div><span>ETA</span><b id="etaTxt">--:--</b></div>
+<aside class="drawer" id="drawer">
+  <div class="dhead">
+    <button class="tabbtn on" data-tab="info">HOW IT WORKS</button>
+    <button class="tabbtn" data-tab="log">FLIGHT LOGBOOK</button>
+    <div class="grow"></div>
+    <button class="sm ghost" id="drawerClose">✕</button>
+  </div>
+  <div class="dbody">
+    <div class="tabpane on" id="pane-info">
+      <p class="note" style="margin-top:0">A flight-shaped Pomodoro. Pick how long you want to focus, pick somewhere the plane can reach in that time, and the session runs as a flight on a real map.</p>
+      <div class="panel" style="margin-top:10px">
+        <h2>PASSENGER &amp; TYPES</h2>
+        <p class="sub">Set your name once under SESSION TYPE on the pass screen. Session type shows on the pass, in the logbook and in the pilot's calls.</p>
+      </div>
+      <div class="panel" style="margin-top:10px">
+        <h2>THE FLIGHT</h2>
+        <p class="sub">A white aircraft follows the real great-circle route on a world map. Altitude, ground speed, distance remaining and the ETA are all derived from progress through the session. The clock only runs while airborne.</p>
+      </div>
+      <div class="panel" style="margin-top:10px">
+        <h2>CONTROLS</h2>
+        <p class="sub">Pause (space) · +5 min (D) · reset (R) · divert (Esc) · re-fit map (F). Drag the map to pan, wheel to zoom.</p>
+      </div>
+      <div class="panel" style="margin-top:10px">
+        <h2>TIME-LAPSE</h2>
+        <p class="sub">Real flying takes too long to sit through, so the clock is compressed. The default is ×<span id="compInfo">30</span>: every minute of focus stands for <span id="compInfo2">30</span> minutes in the air, so an hour covers a sixteen-hour leg.</p>
+      </div>
+      <div class="panel" style="margin-top:10px">
+        <h2>MY ROUTES</h2>
+        <p class="sub">Any airport in the search, or add a place manually by coordinates.</p>
+        <div class="loglist" id="customList"></div>
+      </div>
+    </div>
+    <div class="tabpane" id="pane-log">
+      <p class="sub" id="totalNote">Total focus time logged: 0 min.</p>
+      <div class="loglist" id="logWrap"></div>
+      <div class="row" style="margin-top:12px"><button class="ghost" id="clearLogBtn">CLEAR LOGBOOK</button></div>
     </div>
   </div>
+</aside>
 
-  <div class="hud tr">
-    <div class="phase-chip" id="phaseBadge">TAXI</div>
-    <div class="klabel">TIME TO DESTINATION</div>
-    <div class="remain" id="remainTxt">00:25:00</div>
-    <div class="row" style="justify-content:flex-end;margin-top:11px">
-      <button class="primary" id="pauseBtn">⏸ PAUSE</button>
-      <button id="delayBtn">+5 MIN</button>
-      <button class="ghost" id="resetBtn">↺ RESET</button>
-      <button class="danger" id="divertBtn">✕ DIVERT</button>
+<div class="modal" id="modal">
+  <div class="box">
+    <div class="mhead">
+      <b class="klabel" id="modalTitle">FIND A DESTINATION</b>
+      <div class="grow"></div>
+      <button class="sm ghost" id="modalClose">✕</button>
+    </div>
+    <div class="mbody">
+      <input class="searchinput" id="searchInput" placeholder="search city or airport code — e.g. tokyo, CDG, london" spellcheck="false">
+      <div id="searchResults"></div>
+      <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+        <div class="klabel">ADD A PLACE MANUALLY</div>
+        <div class="manform">
+          <div><label>NAME</label><input id="manName" placeholder="Grandma's house" spellcheck="false"></div>
+          <div><label>CODE</label><input id="manCode" placeholder="HOME" maxlength="4" spellcheck="false"></div>
+          <div><label>LATITUDE</label><input id="manLat" placeholder="22.64" spellcheck="false"></div>
+          <div><label>LONGITUDE</label><input id="manLon" placeholder="113.81" spellcheck="false"></div>
+        </div>
+        <div class="row" style="margin-top:9px">
+          <button id="manAdd">＋ ADD PLACE</button>
+          <button class="ghost" id="manPick">PICK FROM MAP</button>
+        </div>
+        <div class="note" id="manNote"></div>
+      </div>
     </div>
   </div>
-
-  <div class="mapbtns">
-    <button id="zoomIn">＋</button>
-    <button id="zoomOut">－</button>
-    <button id="zoomFit">FIT</button>
-  </div>
-
-  <div class="bottombar">
-    <div class="pb-ends">
-      <span><b id="ribFrom">SZX</b> <span id="ribFromCity">Shenzhen</span></span>
-      <span id="ribPct">0%</span>
-      <span style="text-align:right"><span id="ribToCity">Tokyo</span> <b id="ribTo">NRT</b></span>
-    </div>
-    <div class="pb-track">
-      <div class="pb-fill" id="ribFill"></div>
-      <svg class="pb-plane" id="ribPlane" viewBox="0 0 24 24" aria-hidden="true">
-        <path transform="rotate(90 12 12)" d="M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2A1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
-      </svg>
-    </div>
-    <div class="pb-ticks"><span>TAXI</span><span>CLIMB</span><span>CRUISE</span><span>DESCENT</span><span>LANDING</span></div>
-    <div class="note" id="flightNote" style="margin-top:8px"></div>
-  </div>
-</section>
+</div>
 
 <script>/*__MAPDATA__*/</script>
+<script>/*__AIRPORTS__*/</script>
 <script>
 (function(){
 "use strict";
-const VERSION = "skyfocus-proto-2";
+const VERSION = "skyfocus-proto-3";
 window.onerror = function(m,s,l,c,e){ (window.__errs = window.__errs || []).push(String(m)+" @"+l+":"+c); };
 
 /* ============================================================
-   AIRPORTS — real coordinates; distances and routes are computed
+   DATA
    ============================================================ */
-const COMPRESSION = 15;                        // 1 focus minute = 15 airborne minutes
-const AIRPORTS = {
-  SZX:{code:"SZX", city:"Shenzhen",     airport:"Bao'an Intl",      lat:22.639, lon:113.811},
-  HKG:{code:"HKG", city:"Hong Kong",    airport:"Chek Lap Kok",     lat:22.308, lon:113.918},
-  CAN:{code:"CAN", city:"Guangzhou",    airport:"Baiyun Intl",      lat:23.392, lon:113.299},
-  HAN:{code:"HAN", city:"Hanoi",        airport:"Noi Bai",          lat:21.221, lon:105.807},
-  SIN:{code:"SIN", city:"Singapore",    airport:"Changi",           lat: 1.359, lon:103.989},
-  NRT:{code:"NRT", city:"Tokyo",        airport:"Narita",           lat:35.772, lon:140.393},
-  HND:{code:"HND", city:"Tokyo",        airport:"Haneda",           lat:35.549, lon:139.780},
-  TPE:{code:"TPE", city:"Taipei",       airport:"Taoyuan",          lat:25.077, lon:121.232},
-  BKK:{code:"BKK", city:"Bangkok",      airport:"Suvarnabhumi",     lat:13.690, lon:100.750},
-  MNL:{code:"MNL", city:"Manila",       airport:"Ninoy Aquino",     lat:14.508, lon:121.020},
-  ICN:{code:"ICN", city:"Seoul",        airport:"Incheon",          lat:37.469, lon:126.451},
-  KUL:{code:"KUL", city:"Kuala Lumpur", airport:"Sepang",           lat: 2.745, lon:101.710},
-  DPS:{code:"DPS", city:"Denpasar",     airport:"Ngurah Rai",       lat:-8.748, lon:115.167},
-  DXB:{code:"DXB", city:"Dubai",        airport:"Al Maktoum Intl",  lat:25.253, lon: 55.365},
-  SYD:{code:"SYD", city:"Sydney",       airport:"Kingsford Smith",  lat:-33.939,lon:151.175},
-  AKL:{code:"AKL", city:"Auckland",     airport:"Auckland Intl",    lat:-37.008,lon:174.792},
-  LHR:{code:"LHR", city:"London",       airport:"Heathrow",         lat:51.470, lon:-0.454},
-  CDG:{code:"CDG", city:"Paris",        airport:"Charles de Gaulle",lat:49.010, lon: 2.548},
-  YVR:{code:"YVR", city:"Vancouver",    airport:"YVR Intl",         lat:49.196, lon:-123.18},
-  LAX:{code:"LAX", city:"Los Angeles",  airport:"LAX Intl",         lat:33.941, lon:-118.41},
-  JFK:{code:"JFK", city:"New York",     airport:"John F. Kennedy",  lat:40.641, lon:-73.778},
-  SFO:{code:"SFO", city:"San Francisco",airport:"SFO Intl",         lat:37.621, lon:-122.38}
-};
-const ROUTES = {
-  SZX:[["HAN",125],["SIN",230],["NRT",255],["TPE",115],["BKK",180],["DPS",315],["DXB",500],["SYD",570],["LHR",770],["JFK",920]],
-  HKG:[["TPE",110],["BKK",180],["HND",245],["SIN",235],["DXB",485],["SYD",560],["LHR",760],["LAX",765],["SFO",740]],
-  CAN:[["MNL",175],["ICN",210],["KUL",240],["DPS",320],["CDG",750],["AKL",680],["YVR",710]]
-};
-const ORIGIN_ORDER = ["SZX","HKG","CAN"];
-
+const COMPRESSION = 30;                    // default time-lapse: 1 focus min = 30 airborne min
+const CRUISE_KMH = 840;                    // cruise speed used to model real block time
+const TAXI_MIN = 25;                       // ground + climb/descent overhead
+const SHORT_HAUL_EXTRA = 20;               // short legs spend proportionally more time on the ground
 const RAD = Math.PI/180, DEG = 180/Math.PI;
+
+const DB = (window.AIRPORTS_DB || []).map(function(r){
+  return {code:r[0], city:r[1]||r[0], name:r[2]||"", cc:r[3], lat:r[4], lon:r[5]};
+});
+const BY_CODE = {};
+DB.forEach(function(a){ BY_CODE[a.code]=a; });
+function airport(code){ return BY_CODE[code] || null; }
+
+const PRESET_SUBJECTS = ["PHYSICS","TEST","CHINESE PROJECT","CHEMISTRY","MATH","ESSAY","READING","REVISION","PROBLEM SET","CODE"];
+
+/* ---------- geometry ---------- */
 function haversineKm(a,b){
   const r=RAD, dLat=(b.lat-a.lat)*r;
   let dlon=b.lon-a.lon;
-  while(dlon>180) dlon-=360;              // longitudes may arrive unwrapped (e.g. 286 for -74)
+  while(dlon>180) dlon-=360;
   while(dlon<-180) dlon+=360;
-  const dLon=dlon*r;
-  const s=Math.sin(dLat/2)**2 + Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLon/2)**2;
-  return Math.round(2*6371*Math.asin(Math.min(1,Math.sqrt(s))));
+  const s=Math.sin(dLat/2)**2 + Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dlon*r/2)**2;
+  return 2*6371*Math.asin(Math.min(1,Math.sqrt(s)));
 }
-function focusMinutesFor(realMin){
-  return Math.max(10, Math.min(60, Math.round((realMin/COMPRESSION)/5)*5));
+function blockMinutes(km){                 // modelled real-world block time
+  return Math.round(TAXI_MIN + km/CRUISE_KMH*60 + (km<1200? SHORT_HAUL_EXTRA : 0));
 }
-function legFrom(origin, code, realMin){
-  const o=AIRPORTS[origin], d=AIRPORTS[code];
-  return {origin:o, dest:d, realMin:realMin, km:haversineKm(o,d), focusMin:focusMinutesFor(realMin)};
+function focusMinutes(realMin, comp){
+  const c=comp||COMPRESSION;
+  return Math.max(10, Math.min(120, Math.round((realMin/c)/5)*5));
 }
-function routesFor(origin){ return ROUTES[origin].map(function(p){ return legFrom(origin, p[0], p[1]); }); }
-function hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619);} return Math.abs(h); }
-function fmtClock(d){ return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
-function fmtHMin(min){ const h=Math.floor(min/60), m=min%60; return h>0 ? h+"h"+String(m).padStart(2,"0")+"m" : m+"m"; }
-function fmtDur(sec){ sec=Math.max(0,Math.round(sec)); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60;
-  return (h>0? String(h).padStart(2,"0")+":":"")+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"); }
-function fmtNum(n){ return Math.round(n).toLocaleString("en-US"); }
-
-/* ---------- great-circle geometry (real airline routing) ---------- */
-function gcPoint(a, b, t){
+function reachKm(focusMin, comp){
+  const realMin = focusMin*(comp||COMPRESSION);
+  return Math.max(0, Math.round((realMin-(TAXI_MIN+(realMin<160?SHORT_HAUL_EXTRA:0)))/60*CRUISE_KMH));
+}
+function gcPoint(a,b,t){
   const p1=a.lat*RAD, l1=a.lon*RAD, p2=b.lat*RAD, l2=b.lon*RAD;
   const d = 2*Math.asin(Math.min(1, Math.sqrt(Math.sin((p2-p1)/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin((l2-l1)/2)**2)));
   if(d < 1e-9) return {lat:a.lat, lon:a.lon};
@@ -431,22 +523,32 @@ function gcPoint(a, b, t){
   const z=A*Math.sin(p1)+B*Math.sin(p2);
   return {lat:Math.atan2(z, Math.hypot(x,y))*DEG, lon:Math.atan2(y,x)*DEG};
 }
-function gcSamples(a, b, n){
-  // longitudes unwrapped relative to the origin so the polyline never jumps the seam
-  const out=[]; let prev = a.lon;
+function gcSamples(a,b,n){
+  const out=[]; let prev=a.lon;
   for(let i=0;i<=n;i++){
-    const p = gcPoint(a,b,i/n);
-    let lon = p.lon;
-    while(lon - prev > 180) lon -= 360;
-    while(lon - prev < -180) lon += 360;
-    out.push({lon:lon, lat:p.lat});
-    prev = lon;
+    const p=gcPoint(a,b,i/n); let lon=p.lon;
+    while(lon-prev>180) lon-=360;
+    while(lon-prev<-180) lon+=360;
+    out.push({lon:lon, lat:p.lat}); prev=lon;
   }
   return out;
 }
+function offsetPoint(lat, lon, bearing, distKm){
+  const d=distKm/6371, br=bearing*RAD, p1=lat*RAD, l1=lon*RAD;
+  const p2=Math.asin(Math.sin(p1)*Math.cos(d)+Math.cos(p1)*Math.sin(d)*Math.cos(br));
+  const l2=l1+Math.atan2(Math.sin(br)*Math.sin(d)*Math.cos(p1), Math.cos(d)-Math.sin(p1)*Math.sin(p2));
+  return {lat:p2*DEG, lon:((l2*DEG+540)%360)-180};
+}
+/* ---------- formatting ---------- */
+function fmtClock(d){ return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function fmtHMin(min){ const h=Math.floor(min/60), m=Math.round(min%60); return h>0 ? h+"h"+String(m).padStart(2,"0")+"m" : m+"m"; }
+function fmtDur(sec){ sec=Math.max(0,Math.round(sec)); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60;
+  return (h>0? String(h).padStart(2,"0")+":":"")+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"); }
+function fmtNum(n){ return Math.round(n).toLocaleString("en-US"); }
+function hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619);} return Math.abs(h); }
 
 /* ============================================================
-   TIMERS — wall-clock based, so a throttled tab cannot lose time
+   TIMERS — wall-clock based so a throttled tab cannot lose time
    ============================================================ */
 function mkTimer(){ return {total:0, base:0, running:false, runFrom:0}; }
 function tElapsed(t){ return t.running ? t.base + (Date.now()-t.runFrom)/1000 : t.base; }
@@ -459,237 +561,81 @@ function tAdvance(t,sec){ if(t.running){ t.runFrom -= sec*1000; } else { t.base=
 /* ============================================================
    STATE
    ============================================================ */
-const LS_KEY="skyfocus.log.v1";
+const LS="skyfocus.v3";
 const state = {
-  screen:"board", origin:"SZX", leg:null, focusMin:0,
-  focus:mkTimer(), brk:mkTimer(),
-  sound:true, name:"FOCUS TRAVELLER", log:[],
+  screen:"home", origin:"SZX", dest:null, focusMin:30, comp:COMPRESSION,
+  focus:mkTimer(), brk:mkTimer(), breakLen:5, breakState:"idle",
+  sound:true, voice:true, name:"FOCUS TRAVELLER",
+  subject:"PHYSICS", subjects:[], custom:[], log:[],
   flightNo:"FX0000", gate:"A12", seat:"14C",
-  landedStatus:"LANDED", landedMin:0, landedKm:0, landedSecs:0,
-  lastNow:performance.now(), dt:0
+  landedStatus:"LANDED", landedMin:0, landedKm:0, landedSecs:0, arrivedAt:null,
+  homeUserMoved:false, lastNow:performance.now(), user:null
 };
 const REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 const $ = function(id){ return document.getElementById(id); };
 
 function load(){
   try{
-    const raw=localStorage.getItem(LS_KEY); if(raw) state.log=JSON.parse(raw)||[];
-    const n=localStorage.getItem(LS_KEY+".name"); if(n) state.name=n;
-    const s=localStorage.getItem(LS_KEY+".sound"); if(s!=null) state.sound = s==="1";
+    const raw=localStorage.getItem(LS); const d=raw? JSON.parse(raw):{};
+    if(d.log) state.log=d.log;
+    if(d.name) state.name=d.name;
+    if(d.subject) state.subject=d.subject;
+    if(d.subjects) state.subjects=d.subjects;
+    if(d.custom) state.custom=d.custom;
+    if(d.origin && airport(d.origin)) state.origin=d.origin;
+    if(d.focusMin) state.focusMin=d.focusMin;
+    if(d.comp) state.comp=d.comp;
+    if(d.breakLen) state.breakLen=d.breakLen;
+    if(d.sound!=null) state.sound=d.sound;
+    if(d.voice!=null) state.voice=d.voice;
   }catch(e){}
 }
 function save(){
   try{
-    localStorage.setItem(LS_KEY, JSON.stringify(state.log));
-    localStorage.setItem(LS_KEY+".name", state.name);
-    localStorage.setItem(LS_KEY+".sound", state.sound?"1":"0");
+    localStorage.setItem(LS, JSON.stringify({log:state.log, name:state.name, subject:state.subject,
+      subjects:state.subjects, custom:state.custom, origin:state.origin, focusMin:state.focusMin,
+      comp:state.comp, breakLen:state.breakLen, sound:state.sound, voice:state.voice}));
   }catch(e){}
 }
-
-/* ============================================================
-   BOARDING PASS (shared by departure + arrival screens)
-   ============================================================ */
-const PLANE_PATH = "M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2A1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z";
-function barcodeHTML(seed, count){
-  let h=hash(seed), out="";
-  for(let i=0;i<(count||58);i++){
-    h=(h*1664525+1013904223)%4294967296;
-    const w=[1,1,2,3][h%4];
-    out += '<i style="flex:0 0 '+w+'px;width:'+w+'px;margin-right:'+(h%2===0?"2px":"4px")+';opacity:'+(h%7===0?"0.62":"1")+'"></i>';
-  }
-  return out;
-}
-function passHTML(opts){
-  const leg = state.leg, o = opts||{}, arrive = o.mode==="arrive";
-  const stampCls = arrive ? (o.status==="DIVERTED" ? "stamp diverted" : "stamp") : "";
-  const focusShow = arrive ? (o.focusMin||0) : state.focusMin;
-  const departT = o.departT || new Date();
-  const arriveT = new Date(departT.getTime() + focusShow*60000);
-  const realMin = arrive ? o.actualMin || leg.realMin : leg.realMin;
-  const km = arrive ? (o.km||0) : leg.km;
-  const ratio = Math.max(1, Math.round(leg.realMin / Math.max(1,focusShow)));
-  return '' +
-  '<div class="pass" id="'+(arrive?"arrivalPass":"departurePass")+'">' +
-    '<div class="main">' +
-      '<div class="carrier"><span>FOCUS AIRWAYS · FOCUS CLASS</span><span>'+state.flightNo+'</span></div>' +
-      '<div class="route">' +
-        '<div><div class="code">'+leg.origin.code+'</div></div>' +
-        '<div class="arrow"><span class="planeico">✈</span> <small>TIME-LAPSE ×'+ratio+'</small></div>' +
-        '<div style="text-align:right"><div class="code">'+leg.dest.code+'</div></div>' +
-      '</div>' +
-      '<div class="cityline"><span>'+leg.origin.city+'</span><span>'+leg.dest.city+'</span></div>' +
-      '<div class="fields">' +
-        '<div class="f"><label>PASSENGER</label>' +
-          (arrive ? '<div class="v" id="ap_name"></div>'
-                  : '<input class="nameinput" id="p_name" spellcheck="false"><div class="warnline" id="nameWarn">Name is blank — the pass will read FOCUS TRAVELLER.</div>') +
-        '</div>' +
-        '<div class="f"><label>'+(arrive?"FOCUS LOGGED":"FOCUS TIME")+'</label><div class="v big">'+focusShow+' min</div></div>' +
-        '<div class="f"><label>DEPARTS / ARRIVES</label><div class="v">'+fmtClock(departT)+' → '+fmtClock(arriveT)+'</div></div>' +
-        '<div class="f"><label>'+(arrive?"ACTUAL FLIGHT":"REAL FLIGHT TIME")+'</label><div class="v">'+fmtHMin(realMin)+(km?' · '+fmtNum(km)+' km':'')+'</div></div>' +
-      '</div>' +
-      '<div class="lapse"><span>⏱</span><span id="lapseNote">Real routing compressed ×'+ratio+' — <b>'+focusShow+' min</b> of focus covers a <b>'+fmtHMin(leg.realMin)+'</b> flight'+(o.note? ' · '+o.note : '')+'.</span></div>' +
-      '<div class="barcode">'+barcodeHTML(state.flightNo+"|"+leg.origin.code+leg.dest.code+"|"+departT.toDateString())+'</div>' +
-    '</div>' +
-    '<div class="stub">' +
-      '<div class="klabel">GATE</div><div class="kval">'+state.gate+'</div>' +
-      '<div class="klabel">SEAT</div><div class="kval">'+state.seat+'</div>' +
-      '<div class="klabel">BOARDING</div><div class="kval">'+fmtClock(new Date(departT.getTime()-15*60000))+'</div>' +
-      '<div class="klabel">BAGGAGE</div><div class="kval">1 × DEEP WORK</div>' +
-      '<div class="klabel">FOCUS MIN</div><div class="code-big">'+focusShow+'</div>' +
-      '<div class="klabel">TIME-LAPSE ×'+ratio+'</div>' +
-      '<div class="vseats">FOCUS AIRWAYS'+(o.seatExtra? " · "+o.seatExtra : "")+'</div>' +
-    '</div>' +
-    (arrive ? '<div class="stampwrap"><div class="'+stampCls+'" id="stamp">'+o.status+'<small>'+(o.status==="LANDED"?"ARRIVED":"DIVERTED")+' '+leg.dest.code+'</small></div></div>' : '') +
-  '</div>';
-}
-function renderDeparturePass(){
-  $("passHost").innerHTML = passHTML({mode:"depart"});
-  const input=$("p_name");
-  input.value = state.name;
-  input.addEventListener("input", function(){ validateName(true); });
-  input.addEventListener("blur", function(){ commitName(); input.value=state.name; validateName(false); });
-  validateName(false);
-}
-function validateName(showAlways){
-  const input=$("p_name"), warn=$("nameWarn");
-  if(!input) return true;
-  const blank = input.value.trim().length===0;
-  warn.classList.toggle("on", blank && (showAlways || input.value.length===0));
-  input.style.borderBottomColor = blank? "#d08a4a" : "#a39b88";
-  return !blank;
-}
-function commitName(){
-  const v=$("p_name").value.trim();
-  state.name = v.length? v : "FOCUS TRAVELLER";
-  save();
-}
-function renderArrivalPass(){
-  const arr = state.arrivedAt || new Date();
-  $("arrivalHost").innerHTML = passHTML({
-    mode:"arrive",
-    status: state.landedStatus,
-    focusMin: state.landedMin,
-    actualMin: state.landedSecs/60,
-    km: state.landedKm,
-    departT: arr,
-    note: state.landedStatus==="LANDED" ? "gate to gate" : "landed early — distance credited to the point of diversion"
-  });
-  const n=$("ap_name"); if(n) n.textContent = state.name;
-  const st=$("stamp");
-  if(st){ requestAnimationFrame(function(){ requestAnimationFrame(function(){ st.classList.add("show"); }); }); }
+function allAirports(){ return state.custom.concat(DB); }
+function findAirport(code){ for(let i=0;i<state.custom.length;i++) if(state.custom[i].code===code) return state.custom[i]; return airport(code); }
+function legTo(dest){
+  const o=findAirport(state.origin); if(!o||!dest) return null;
+  const km=haversineKm(o,dest);
+  const realMin=blockMinutes(km);
+  return {origin:o, dest:dest, km:Math.round(km), realMin:realMin};
 }
 
 /* ============================================================
-   DEPARTURE BOARD
+   MAP ENGINE — one reusable projected world view per canvas
    ============================================================ */
-function buildOriginSelect(){
-  const sel=$("originSel"); sel.innerHTML="";
-  ORIGIN_ORDER.forEach(function(c){
-    const a=AIRPORTS[c], o=document.createElement("option");
-    o.value=c; o.textContent=c+" · "+a.city;
-    sel.appendChild(o);
-  });
-  sel.value=state.origin;
-  sel.addEventListener("change", function(){ state.origin=sel.value; state.leg=null; renderBoard(); });
-}
-function renderBoard(){
-  const a=AIRPORTS[state.origin];
-  $("originMeta").textContent = (a.airport? a.airport+" · ":"") + a.lat.toFixed(2)+"°, "+a.lon.toFixed(2)+"°  ·  "+fmtClock(new Date())+" local";
-  const list=$("dlist"); list.innerHTML="";
-  routesFor(state.origin).forEach(function(leg){
-    const b=document.createElement("button");
-    b.className="drow"; b.setAttribute("data-code", leg.dest.code);
-    b.innerHTML =
-      '<span class="code">'+leg.dest.code+'<small>'+leg.dest.city.toUpperCase()+'</small></span>'+
-      '<span class="city">'+leg.dest.airport+'<em>'+fmtNum(leg.km)+' km great-circle · '+leg.dest.lat.toFixed(1)+'°, '+leg.dest.lon.toFixed(1)+'°</em></span>'+
-      '<span class="real"><b>'+fmtHMin(leg.realMin)+'</b>real flight</span>'+
-      '<span class="focuspill">'+leg.focusMin+' min<span>FOCUS</span></span>';
-    b.addEventListener("click", function(){ selectLeg(leg); });
-    list.appendChild(b);
-  });
-  $("compLabel").textContent = COMPRESSION;
-}
-function selectLeg(leg){
-  state.leg=leg; state.focusMin=leg.focusMin;
-  const h=hash(leg.origin.code+leg.dest.code+String(new Date().getDate()));
-  state.flightNo="FX"+String(1000+(h%8999));
-  state.gate=String.fromCharCode(65+(h%6))+String(1+(h%36));
-  state.seat=String(1+(h%30))+String.fromCharCode(65+(h%6));
-  renderDeparturePass();
-  show("pass");
-}
-$("presetBtn").addEventListener("click", function(){ state.focusMin=Math.max(5,state.focusMin-5); renderDeparturePass(); });
-$("presetAdd").addEventListener("click", function(){ state.focusMin=Math.min(180,state.focusMin+5); renderDeparturePass(); });
-
-/* ============================================================
-   WORLD MAP
-   ============================================================ */
-const mapEl=$("map"), mctx=mapEl.getContext("2d");
-let W=0, H=0, DPR=1;
-const view = {lon0:110, lat0:20, zoom:1};
-let base=document.createElement("canvas"), baseReady=false, baseKey="";
-const planePath = new Path2D(PLANE_PATH);
-
 const MAPDATA = window.MAPDATA || {q:20,l:[],b:[]};
 const MQ = MAPDATA.q || 20;
-const LAND = MAPDATA.l.map(function(flat){
-  const a=new Float32Array(flat.length);
-  for(let i=0;i<flat.length;i++) a[i]=flat[i]/MQ;
-  return a;
-});
-const BORDERS = MAPDATA.b.map(function(flat){
-  const a=new Float32Array(flat.length);
-  for(let i=0;i<flat.length;i++) a[i]=flat[i]/MQ;
-  return a;
-});
-function ringBBox(ring){
-  let minLon=180,maxLon=-180,minLat=90,maxLat=-90;
-  for(let i=0;i<ring.length;i+=2){
-    const lo=ring[i], la=ring[i+1];
-    if(lo<minLon) minLon=lo; if(lo>maxLon) maxLon=lo;
-    if(la<minLat) minLat=la; if(la>maxLat) maxLat=la;
-  }
-  return [minLon,maxLon,minLat,maxLat];
+function decode(list){
+  return (list||[]).map(function(flat){
+    const a=new Float32Array(flat.length);
+    for(let i=0;i<flat.length;i++) a[i]=flat[i]/MQ;
+    return a;
+  });
 }
-const RING_BBOX = new Map();
+const LAND = decode(MAPDATA.l);
+const BORDERS = decode(MAPDATA.b);
+const bboxCache = new Map();
 function bboxOf(ring){
-  let b=RING_BBOX.get(ring);
-  if(!b){ b=ringBBox(ring); RING_BBOX.set(ring,b); }
+  let b=bboxCache.get(ring);
+  if(!b){
+    let a=180,c=-180,d=90,e=-90;
+    for(let i=0;i<ring.length;i+=2){ const lo=ring[i], la=ring[i+1];
+      if(lo<a)a=lo; if(lo>c)c=lo; if(la<d)d=la; if(la>e)e=la; }
+    b=[a,c,d,e]; bboxCache.set(ring,b);
+  }
   return b;
 }
-function pxPerDeg(){ return Math.min(W/360, H/180) * view.zoom; }
-function minZoom(){                        // world view keeps a small margin
-  const base=Math.min(W/360, H/180);
-  return Math.max(1, (W/2)/(178*base));
-}
-function projX(lon){ return W/2 + (lon - view.lon0) * pxPerDeg(); }
-function projY(lat){ return H/2 - (lat - view.lat0) * pxPerDeg(); }
-function invLon(x){ return view.lon0 + (x - W/2)/pxPerDeg(); }
-function invLat(y){ return view.lat0 - (y - H/2)/pxPerDeg(); }
-function viewLonRange(){
-  const half=(W/2)/pxPerDeg();
-  return [view.lon0-half, view.lon0+half];
-}
-/* --- antimeridian handling ---------------------------------------------
-   The source rings are closed "belt" polygons: the land object joins Eurasia
-   to Alaska across the Bering Strait, so one ring can wrap right around the
-   world and cross +-180 through a horizontal edge. Filling such a ring in a
-   view that is not centred on the seam paints that edge as a band straight
-   across the map, so instead: unwrap each ring into a continuous longitude
-   run, shift it to the copy nearest the view centre, and clip it to the
-   longitude band the view can actually show. Every clipped piece gets its
-   seam side closed by a vertical edge, and the clip lines sit outside the
-   visible window, so nothing spurious is ever drawn.
-   ------------------------------------------------------------------------ */
 function unwrapRing(ring, lon0){
-  const out=new Float64Array(ring.length);
-  let prev=null, sum=0;
+  const out=new Float64Array(ring.length); let prev=null, sum=0;
   for(let i=0;i<ring.length;i+=2){
     let lon=ring[i];
-    if(prev!==null){
-      while(lon-prev>180) lon-=360;
-      while(lon-prev<-180) lon+=360;
-    }
+    if(prev!==null){ while(lon-prev>180) lon-=360; while(lon-prev<-180) lon+=360; }
     out[i]=lon; out[i+1]=ring[i+1]; prev=lon; sum+=lon;
   }
   const k=Math.round((lon0-(sum/(ring.length/2)))/360);
@@ -699,458 +645,355 @@ function unwrapRing(ring, lon0){
 function clipRing(ring, minLon, maxLon){
   const n=ring.length/2, out=[];
   const inside=function(p){ return p[0]>=minLon && p[0]<=maxLon; };
-  const cut=function(a,b,bound){            // latitude where the edge crosses bound
-    const t=(bound-a[0])/((b[0]-a[0])||1e-9);
-    return [bound, a[1]+(b[1]-a[1])*t];
-  };
+  const cut=function(a,b,bound){ const t=(bound-a[0])/((b[0]-a[0])||1e-9); return [bound, a[1]+(b[1]-a[1])*t]; };
   let cur=[], prev=null;
   for(let i=0;i<n;i++){
     const p=[ring[2*i], ring[2*i+1]];
     if(prev===null){ prev=p; if(inside(p)) cur.push(p); continue; }
     const pin=inside(prev), cin=inside(p);
-    if(pin && cin) cur.push(p);
-    else if(pin && !cin){ cur.push(cut(prev,p, p[0]>maxLon? maxLon : minLon)); out.push(cur); cur=[]; }
-    else if(!pin && cin){ const b=cut(prev,p, prev[0]>maxLon? maxLon : minLon); cur=[b,p]; }
+    if(pin&&cin) cur.push(p);
+    else if(pin&&!cin){ cur.push(cut(prev,p, p[0]>maxLon?maxLon:minLon)); out.push(cur); cur=[]; }
+    else if(!pin&&cin){ cur=[cut(prev,p, prev[0]>maxLon?maxLon:minLon), p]; }
     prev=p;
   }
-  if(cur.length){
-    if(out.length && inside([ring[0], ring[1]])) out[0]=cur.concat(out[0]);
-    else out.push(cur);
-  }
+  if(cur.length){ if(out.length && inside([ring[0],ring[1]])) out[0]=cur.concat(out[0]); else out.push(cur); }
   return out.filter(function(pc){ return pc.length>=3; });
 }
-const UNWRAPPED = new Map();                 // ring -> {pts, mean}
-function ringBase(ring){                      // canonical unwrap: independent of the view
-  let c=UNWRAPPED.get(ring);
+function signedArea(pc){
+  let a=0;
+  for(let i=0;i<pc.length;i++){ const p=pc[i], q=pc[(i+1)%pc.length]; a += p[0]*q[1]-q[0]*p[1]; }
+  return a/2;
+}
+const RING_BASE = new Map();
+function ringBase(ring){
+  let c=RING_BASE.get(ring);
   if(!c){
-    const pts=unwrapRing(ring, 0);
+    const pts=unwrapRing(ring,0);
     let sum=0; for(let i=0;i<pts.length;i+=2) sum+=pts[i];
     c={pts:pts, mean:sum/(pts.length/2)};
-    UNWRAPPED.set(ring, c);
+    RING_BASE.set(ring,c);
   }
   return c;
 }
-// Which copy of the world (0, +-360, ...) this ring should be drawn in. Derived
-// per frame from the canonical mean, so panning or zooming can never serve a
-// stale shift from a cache - that bug silently dropped whole countries.
-function shiftFor(ring){ return Math.round((view.lon0-ringBase(ring).mean)/360); }
-function signedArea(piece){
-  let a=0;
-  for(let i=0;i<piece.length;i++){
-    const p=piece[i], q=piece[(i+1)%piece.length];
-    a += p[0]*q[1]-q[0]*p[1];
-  }
-  return a/2;
-}
-function addPiece(path, piece, shift){
-  if(signedArea(piece) < 0) piece=piece.slice().reverse();
-  const off=(shift||0)*360;
-  let first=true;
-  for(let i=0;i<piece.length;i++){
-    const x=projX(piece[i][0]+off), y=projY(piece[i][1]);
-    if(!isFinite(x)||!isFinite(y)) continue;
-    if(first){ path.moveTo(x,y); first=false; } else path.lineTo(x,y);
-  }
-}
-function sizeMap(){
-  const r=mapEl.getBoundingClientRect();
-  DPR=Math.min(2, window.devicePixelRatio||1);
-  W=Math.max(320, Math.round(r.width)); H=Math.max(240, Math.round(r.height));
-  mapEl.width=Math.round(W*DPR); mapEl.height=Math.round(H*DPR);
-  mctx.setTransform(DPR,0,0,DPR,0,0);
-  baseReady=false;
-}
-const LAYERS = {ocean:true, graticule:true, land:true, borders:true, route:true, plane:true, markers:true};
-function renderBase(){
-  if(!W) sizeMap();
-  if(base.width!==mapEl.width || base.height!==mapEl.height){ base.width=mapEl.width; base.height=mapEl.height; }
-  const c=base.getContext("2d");
-  c.setTransform(DPR,0,0,DPR,0,0);
-  c.clearRect(0,0,W,H);
-  // ocean
-  const og=c.createLinearGradient(0,0,W*0.3,H);
-  og.addColorStop(0,"#071322"); og.addColorStop(0.5,"#081a2c"); og.addColorStop(1,"#061020");
-  if(LAYERS.ocean){ c.fillStyle=og; c.fillRect(0,0,W,H); }
+const LAYERS={ocean:true,graticule:true,land:true,borders:true};
 
-  const s=pxPerDeg(), lonR=viewLonRange();
-  const latTop=invLat(0), latBot=invLat(H);
-  // graticule every 15°
-  if(LAYERS.graticule){
-  c.lineWidth=1; c.strokeStyle="rgba(120,160,220,0.075)";
-  c.beginPath();
-  for(let lon=Math.ceil(lonR[0]/15)*15; lon<=lonR[1]; lon+=15){ const x=projX(lon); c.moveTo(x,0); c.lineTo(x,H); }
-  for(let lat=Math.ceil(latBot/15)*15; lat<=latTop; lat+=15){ const y=projY(lat); c.moveTo(0,y); c.lineTo(W,y); }
-  c.stroke();
-  // equator / prime meridian a touch brighter
-  c.strokeStyle="rgba(140,180,235,0.16)";
-  c.beginPath();
-  const ye=projY(0); c.moveTo(0,ye); c.lineTo(W,ye);
-  const xm=projX(0); c.moveTo(xm,0); c.lineTo(xm,H);
-  c.stroke();
-  }
-
-  // land — one path for the fill, one for the coastline stroke
-  const bandMin=view.lon0-180, bandMax=view.lon0+180;   // clip band, wider than the view
-  const pad=3;
-  const landPath=new Path2D(), coastPath=new Path2D();
-  for(let i=0;i<LAND.length;i++){
-    const ring=LAND[i], b=bboxOf(ring);
-    // Latitude is safe to pre-filter on raw values. Longitude is NOT: a western
-    // ring's raw bbox (-124..-67) looks outside a band centred on 200 deg, but
-    // its +360 copy is in view. So let clipRing decide longitude, always.
-    if(b[3] < latBot-pad || b[2] > latTop+pad) continue;
-    const k=shiftFor(ring), base=ringBase(ring).pts;
-    const pieces=clipRing(base, bandMin-k*360, bandMax-k*360);
-    for(let j=0;j<pieces.length;j++){ addPiece(landPath,pieces[j],k); addPiece(coastPath,pieces[j],k); }
-  }
-  if(LAYERS.land){
-    const lg=c.createLinearGradient(0,0,0,H);
-    lg.addColorStop(0,"#1b2c45"); lg.addColorStop(1,"#101d30");
-    c.fillStyle=lg; c.fill(landPath);
-    c.lineWidth=1; c.strokeStyle="#3d5f83"; c.stroke(coastPath);
-  }
-
-  // country borders
-  const bPath=new Path2D();
-  for(let i=0;i<BORDERS.length;i++){
-    const ring=BORDERS[i], b=bboxOf(ring);
-    if(b[3] < latBot-pad || b[2] > latTop+pad) continue;
-    const k=shiftFor(ring);
-    const pieces=clipRing(ringBase(ring).pts, bandMin-k*360, bandMax-k*360);
-    for(let j=0;j<pieces.length;j++) addPiece(bPath,pieces[j],k);
-  }
-  if(LAYERS.borders){ c.lineWidth=0.7; c.strokeStyle="rgba(74,110,158,0.5)"; c.stroke(bPath); }
-
-  baseReady=true;
-  baseKey=W+"x"+H+"@"+view.zoom.toFixed(3)+","+view.lon0.toFixed(2)+","+view.lat0.toFixed(2);
+function MapView(canvas){
+  const ctx=canvas.getContext("2d");
+  const view={lon0:0, lat0:20, zoom:1};
+  const base=document.createElement("canvas");
+  let W=0,H=0,DPR=1,ready=false,key="";
+  const api={
+    canvas:canvas, ctx:ctx, view:view,
+    get W(){ return W; }, get H(){ return H; }, get ready(){ return ready; },
+    get key(){ return key; },
+    pxPerDeg:function(){ return Math.min(W/360,H/180)*view.zoom; },
+    minZoom:function(){ const b=Math.min(W/360,H/180); return Math.max(1,(W/2)/(178*b)); },
+    px:function(lon){ return W/2 + (lon-view.lon0)*api.pxPerDeg(); },
+    py:function(lat){ return H/2 - (lat-view.lat0)*api.pxPerDeg(); },
+    invLon:function(x){ return view.lon0 + (x-W/2)/api.pxPerDeg(); },
+    invLat:function(y){ return view.lat0 - (y-H/2)/api.pxPerDeg(); },
+    nearView:function(lon){ return lon + 360*Math.round((view.lon0-lon)/360); },
+    project:function(lon,lat){ return {x:api.px(lon), y:api.py(lat)}; },
+    unproject:function(x,y){ return {lon:api.invLon(x), lat:api.invLat(y)}; },
+    size:function(){
+      const r=canvas.getBoundingClientRect();
+      DPR=Math.min(2, window.devicePixelRatio||1);
+      W=Math.max(200, Math.round(r.width)); H=Math.max(150, Math.round(r.height));
+      canvas.width=Math.round(W*DPR); canvas.height=Math.round(H*DPR);
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      ready=false;
+    },
+    zoomBy:function(f,cx,cy){
+      const b={lon:api.invLon(cx==null?W/2:cx), lat:api.invLat(cy==null?H/2:cy)};
+      view.zoom=Math.max(api.minZoom(), Math.min(60, view.zoom*f));
+      const a={lon:api.invLon(cx==null?W/2:cx), lat:api.invLat(cy==null?H/2:cy)};
+      view.lon0 += b.lon-a.lon; view.lat0 += b.lat-a.lat; ready=false;
+    },
+    pan:function(dx,dy){ const s=api.pxPerDeg(); view.lon0 -= dx/s; view.lat0 += dy/s; ready=false; },
+    fitTo:function(latlon, padLon, padLat){
+      if(!latlon.length) return;
+      const samp=[];
+      const unwrapRef=latlon[0].lon;
+      latlon.forEach(function(p){
+        let lon=p.lon + 360*Math.round((unwrapRef-p.lon)/360);
+        samp.push({lon:lon, lat:p.lat});
+      });
+      let a=1e9,c=-1e9,d=1e9,e=-1e9;
+      samp.forEach(function(p){ if(p.lon<a)a=p.lon; if(p.lon>c)c=p.lon; if(p.lat<d)d=p.lat; if(p.lat>e)e=p.lat; });
+      const lonSpan=Math.max(padLon||4, Math.min(350, c-a));
+      const latSpan=Math.max(padLat||3, e-d);
+      view.lon0=(a+c)/2; view.lat0=(d+e)/2;
+      const b=Math.min(W/360,H/180);
+      view.zoom=Math.max(api.minZoom(), Math.min(60, Math.min(0.76*W/lonSpan, 0.62*H/latSpan)/b));
+      ready=false;
+    },
+    renderBase:function(){
+      if(!W) api.size();
+      if(base.width!==canvas.width || base.height!==canvas.height){ base.width=canvas.width; base.height=canvas.height; }
+      const c=base.getContext("2d");
+      c.setTransform(DPR,0,0,DPR,0,0);
+      c.clearRect(0,0,W,H);
+      const og=c.createLinearGradient(0,0,W*0.3,H);
+      og.addColorStop(0,"#071322"); og.addColorStop(0.5,"#081a2c"); og.addColorStop(1,"#061020");
+      if(LAYERS.ocean){ c.fillStyle=og; c.fillRect(0,0,W,H); }
+      const latTop=api.invLat(0), latBot=api.invLat(H), pad=3;
+      const bandMin=view.lon0-180, bandMax=view.lon0+180;
+      if(LAYERS.graticule){
+        c.lineWidth=1; c.strokeStyle="rgba(120,160,220,0.07)";
+        c.beginPath();
+        const lonA=api.invLon(0), lonB=api.invLon(W);
+        for(let lon=Math.ceil(lonA/15)*15; lon<=lonB; lon+=15){ const x=api.px(lon); c.moveTo(x,0); c.lineTo(x,H); }
+        for(let lat=Math.ceil(latBot/15)*15; lat<=latTop; lat+=15){ const y=api.py(lat); c.moveTo(0,y); c.lineTo(W,y); }
+        c.stroke();
+        c.strokeStyle="rgba(140,180,235,0.14)"; c.beginPath();
+        const ye=api.py(0); c.moveTo(0,ye); c.lineTo(W,ye);
+        const xm=api.px(0); c.moveTo(xm,0); c.lineTo(xm,H); c.stroke();
+      }
+      const landPath=new Path2D(), coastPath=new Path2D();
+      for(let i=0;i<LAND.length;i++){
+        const ring=LAND[i], b=bboxOf(ring);
+        if(b[3] < latBot-pad || b[2] > latTop+pad) continue;
+        const k=Math.round((view.lon0-ringBase(ring).mean)/360);
+        const pieces=clipRing(ringBase(ring).pts, bandMin-k*360, bandMax-k*360);
+        for(let j=0;j<pieces.length;j++){
+          const pc=pieces[j], rev=(signedArea(pc)<0)? pc.slice().reverse() : pc;
+          let first=true;
+          for(let n=0;n<rev.length;n++){
+            const x=api.px(rev[n][0]+k*360), y=api.py(rev[n][1]);
+            if(first){ landPath.moveTo(x,y); coastPath.moveTo(x,y); first=false; }
+            else { landPath.lineTo(x,y); coastPath.lineTo(x,y); }
+          }
+        }
+      }
+      if(LAYERS.land){
+        const lg=c.createLinearGradient(0,0,0,H);
+        lg.addColorStop(0,"#1b2c45"); lg.addColorStop(1,"#101d30");
+        c.fillStyle=lg; c.fill(landPath);
+        c.lineWidth=1; c.strokeStyle="#3d5f83"; c.stroke(coastPath);
+      }
+      if(LAYERS.borders && BORDERS.length){
+        const bp=new Path2D();
+        for(let i=0;i<BORDERS.length;i++){
+          const ring=BORDERS[i], b=bboxOf(ring);
+          if(b[3] < latBot-pad || b[2] > latTop+pad) continue;
+          const k=Math.round((view.lon0-ringBase(ring).mean)/360);
+          clipRing(ringBase(ring).pts, bandMin-k*360, bandMax-k*360).forEach(function(pc){
+            let first=true;
+            for(let n=0;n<pc.length;n++){
+              const x=api.px(pc[n][0]+k*360), y=api.py(pc[n][1]);
+              if(first){ bp.moveTo(x,y); first=false; } else bp.lineTo(x,y);
+            }
+          });
+        }
+        c.lineWidth=0.7; c.strokeStyle="rgba(74,110,158,0.5)"; c.stroke(bp);
+      }
+      ready=true; key=api.keyOf();
+    },
+    keyOf:function(){ return W+"x"+H+"@"+view.zoom.toFixed(3)+","+view.lon0.toFixed(2)+","+view.lat0.toFixed(2); },
+    clear:function(){ ctx.clearRect(0,0,W,H); },
+    blit:function(){ if(!ready || key!==api.keyOf()) api.renderBase(); ctx.drawImage(base,0,0,W,H); },
+    ring:function(points, style){                       // polyline over the map
+      ctx.save(); ctx.beginPath();
+      points.forEach(function(p,i){ const x=api.px(p.lon), y=api.py(p.lat);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+      if(style.dash) ctx.setLineDash(style.dash);
+      ctx.lineWidth=style.width||1.5; ctx.strokeStyle=style.color||"#fff";
+      if(style.glow){ ctx.shadowColor=style.glow; ctx.shadowBlur=8; }
+      ctx.stroke(); ctx.restore();
+    },
+    dot:function(lon,lat,r,color,ring){
+      const x=api.px(api.nearView(lon)), y=api.py(lat);
+      ctx.save();
+      ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=color; ctx.fill();
+      if(ring){ ctx.lineWidth=1.6; ctx.strokeStyle=ring; ctx.stroke(); }
+      ctx.restore(); return {x:x,y:y};
+    },
+    label:function(lon,lat,text,below,color){
+      const p=api.dot(lon,lat,4.4,color||"#ffb347","rgba(5,10,20,.85)");
+      const ly=p.y+(below?20:-13);
+      ctx.save();
+      ctx.font="600 12px ui-monospace,Menlo,monospace";
+      const tw=ctx.measureText(text).width;
+      ctx.fillStyle="rgba(6,12,22,0.74)";
+      ctx.fillRect(p.x-tw/2-6, ly-11, tw+12, 16);
+      ctx.fillStyle="#e8eef8"; ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(text, p.x, ly-3);
+      ctx.restore();
+      return p;
+    }
+  };
+  return api;
 }
-
-/* ---------- route + aircraft ---------- */
-let samples=[], routeInited=false;
-function buildRoute(){
-  const leg=state.leg; if(!leg) return;
-  samples = gcSamples(leg.origin, leg.dest, 160);
-  routeInited=true;
-}
-function routeProgress(){
-  if(!state.focus.total) return 0;
-  return Math.max(0, Math.min(1, tElapsed(state.focus)/state.focus.total));
-}
-function pointAt(p){
-  if(!samples.length) return null;
-  const f=Math.max(0,Math.min(1,p))*(samples.length-1);
-  const i=Math.floor(f), u=f-i, a=samples[i], b=samples[Math.min(samples.length-1,i+1)];
-  return {lon:a.lon+(b.lon-a.lon)*u, lat:a.lat+(b.lat-a.lat)*u};
-}
-function fitRoute(){
-  const leg=state.leg; if(!leg || !samples.length) return;
-  buildRoute();
-  let minLon=1e9,maxLon=-1e9,minLat=1e9,maxLat=-1e9;
-  samples.forEach(function(s){
-    if(s.lon<minLon) minLon=s.lon; if(s.lon>maxLon) maxLon=s.lon;
-    if(s.lat<minLat) minLat=s.lat; if(s.lat>maxLat) maxLat=s.lat;
-  });
-  const lonSpan=Math.max(4, Math.min(350, maxLon-minLon));
-  const latSpan=Math.max(3, maxLat-minLat);
-  view.lon0=(minLon+maxLon)/2; view.lat0=(minLat+maxLat)/2;
-  const baseScale=Math.min(W/360, H/180);
-  const sTarget=Math.min(0.76*W/lonSpan, 0.60*H/latSpan);
-  view.zoom=Math.max(minZoom(), Math.min(14, sTarget/baseScale));
-  baseReady=false;
-}
-function drawRoute(){
-  if(!samples.length) return;
-  const p=routeProgress();
-  const n=samples.length-1, idx=Math.max(0, Math.min(n, Math.round(p*n)));
-  const rem=new Path2D(), flown=new Path2D();
-  for(let i=0;i<samples.length;i++){
-    const x=projX(samples[i].lon), y=projY(samples[i].lat);
-    if(i===0){ rem.moveTo(x,y); flown.moveTo(x,y); }
-    else { rem.lineTo(x,y); if(i<=idx) flown.lineTo(x,y); }
-  }
-  mctx.save();
-  mctx.setLineDash([7,7]); mctx.lineWidth=1.8; mctx.strokeStyle="rgba(255,255,255,0.34)";
-  mctx.stroke(rem);
-  mctx.restore();
-  mctx.save();
-  mctx.lineWidth=2.6; mctx.strokeStyle="#ffb347";
-  mctx.shadowColor="rgba(255,179,71,0.75)"; mctx.shadowBlur=10;
-  mctx.stroke(flown);
-  mctx.restore();
-}
-function nearView(lon){                  // pick the world copy nearest the view centre
-  return lon + 360*Math.round((view.lon0-lon)/360);
-}
-function marker(airport, color, above){
-  const x=projX(nearView(airport.lon)), y=projY(airport.lat);
-  if(x<-80||x>W+80||y<-60||y>H+60) return;
-  mctx.save();
-  mctx.beginPath(); mctx.arc(x,y,4.6,0,Math.PI*2);
-  mctx.fillStyle=color; mctx.fill();
-  mctx.lineWidth=1.6; mctx.strokeStyle="rgba(5,10,20,0.85)"; mctx.stroke();
-  mctx.font="600 12px ui-monospace,Menlo,monospace";
-  const label=airport.code, tw=mctx.measureText(label).width;
-  const ly=y+(above? -13 : 20);
-  mctx.fillStyle="rgba(6,12,22,0.72)";
-  mctx.fillRect(x-tw/2-6, ly-11, tw+12, 16);
-  mctx.fillStyle="#e8eef8"; mctx.textAlign="center"; mctx.textBaseline="middle";
-  mctx.fillText(label, x, ly-3);
-  mctx.restore();
-}
-function drawAircraft(){
-  const p=pointAt(routeProgress());
-  if(!p) return;
-  const x=projX(p.lon), y=projY(p.lat);
-  const ahead=pointAt(Math.min(1, routeProgress()+0.012));
-  const ax=projX(ahead.lon), ay=projY(ahead.lat);
-  const ang=Math.atan2(ay-y, ax-x);
-  const size=26;
-  mctx.save();
-  // soft halo so the white aircraft reads on any background
-  mctx.beginPath(); mctx.arc(x,y,size*0.62,0,Math.PI*2);
-  const hg=mctx.createRadialGradient(x,y,0,x,y,size*0.62);
-  hg.addColorStop(0,"rgba(10,18,32,0.55)"); hg.addColorStop(1,"rgba(10,18,32,0)");
-  mctx.fillStyle=hg; mctx.fill();
-  if(!REDUCED){
-    const pulse=(performance.now()%1600)/1600;
-    mctx.beginPath(); mctx.arc(x,y,size*0.6+pulse*size*0.9,0,Math.PI*2);
-    mctx.strokeStyle="rgba(255,255,255,"+(0.35*(1-pulse)).toFixed(3)+")";
-    mctx.lineWidth=1.2; mctx.stroke();
-  }
-  mctx.translate(x,y);
-  mctx.rotate(ang + Math.PI/2);          // icon points "up" in its own viewBox
-  mctx.scale(size/24, size/24);
-  mctx.translate(-12,-12);
-  mctx.fillStyle="#ffffff";
-  mctx.shadowColor="rgba(0,0,0,0.75)"; mctx.shadowBlur=4;
-  mctx.fill(planePath);
-  mctx.restore();
-  state.planeScreen={x:x, y:y, lon:p.lon, lat:p.lat, heading:ang};
-}
-function drawMap(){
-  if(!baseReady || baseKey!==keyOf()) renderBase();
-  mctx.clearRect(0,0,W,H);
-  mctx.drawImage(base,0,0,W,H);
-  if(LAYERS.route) drawRoute();
-  if(state.leg && LAYERS.markers){ marker(state.leg.origin,"#48d597",false); marker(state.leg.dest,"#ffb347",true); }
-  if(LAYERS.plane) drawAircraft();
-}
-function keyOf(){ return W+"x"+H+"@"+view.zoom.toFixed(3)+","+view.lon0.toFixed(2)+","+view.lat0.toFixed(2); }
-
-/* map interaction: zoom + pan */
-function zoomBy(f, cx, cy){
-  const before={lon:invLon(cx==null?W/2:cx), lat:invLat(cy==null?H/2:cy)};
-  view.zoom=Math.max(minZoom(), Math.min(40, view.zoom*f));
-  const after={lon:invLon(cx==null?W/2:cx), lat:invLat(cy==null?H/2:cy)};
-  view.lon0 += before.lon-after.lon; view.lat0 += before.lat-after.lat;
-  baseReady=false;
-}
-$("zoomIn").addEventListener("click", function(){ zoomBy(1.5); });
-$("zoomOut").addEventListener("click", function(){ zoomBy(1/1.5); });
-$("zoomFit").addEventListener("click", function(){ fitRoute(); });
-(function mapPan(){
-  let down=false, lx=0, ly=0;
-  mapEl.addEventListener("mousedown", function(e){ down=true; lx=e.clientX; ly=e.clientY; mapEl.classList.add("dragging"); });
-  window.addEventListener("mouseup", function(){ down=false; mapEl.classList.remove("dragging"); });
-  window.addEventListener("mousemove", function(e){
-    if(!down) return;
-    const s=pxPerDeg();
-    view.lon0 -= (e.clientX-lx)/s; view.lat0 += (e.clientY-ly)/s;
-    lx=e.clientX; ly=e.clientY; baseReady=false;
-  });
-  mapEl.addEventListener("wheel", function(e){ e.preventDefault(); zoomBy(e.deltaY<0?1.12:1/1.12, e.clientX, e.clientY); }, {passive:false});
-  let last=0;
-  mapEl.addEventListener("touchstart", function(e){ if(e.touches[0]){ lx=e.touches[0].clientX; ly=e.touches[0].clientY; } });
-  mapEl.addEventListener("touchmove", function(e){
-    const t=e.touches[0]; if(!t) return;
-    const s=pxPerDeg(); view.lon0 -= (t.clientX-lx)/s; view.lat0 += (t.clientY-ly)/s;
-    lx=t.clientX; ly=t.clientY; baseReady=false;
-  }, {passive:true});
-})();
 
 /* ============================================================
-   FLIGHT PHASES (altitude + speed, both derived from progress)
+   VIEWS
    ============================================================ */
+const homeMapEl=$("homeMap"), flightMapEl=$("map");
+const homeMap = MapView(homeMapEl);
+const flightMap = MapView(flightMapEl);
+function activeMap(){ return state.screen==="flight" ? flightMap : homeMap; }
+
+/* ---------- destination geometry helpers ---------- */
+function ringPointsAt(origin, radiusKm){
+  if(!(radiusKm>0)) return [];
+  const out=[];
+  for(let b=0;b<360;b+=3) out.push(offsetPoint(origin.lat, origin.lon, b, radiusKm));
+  return out;
+}
+let distCache={origin:null, list:[]};
+function distanceList(){
+  const o=findAirport(state.origin);
+  if(!o) return [];
+  if(distCache.origin===state.origin) return distCache.list;
+  const list=[];
+  allAirports().forEach(function(a){
+    if(a.code===state.origin) return;
+    list.push({a:a, km:haversineKm(o,a)});
+  });
+  list.sort(function(p,r){ return p.km-r.km; });
+  distCache={origin:state.origin, list:list};
+  return list;
+}
+function nearbyDestinations(limit){ return distanceList().slice(0, limit||9999); }
+function reachableRadius(){ return reachKm(state.focusMin, state.comp); }
+
+let homeDirty=true, lastHomeKey="";
+function markHome(){ homeDirty=true; }
+function drawHome(){
+  const m=homeMap;
+  if(!m.W) m.size();
+  m.clear(); m.blit();
+  const o=findAirport(state.origin); if(!o) return;
+  const R=reachableRadius();
+  if(state.user){ m.dot(state.user.lon, state.user.lat, 6, "#4da3ff", "rgba(255,255,255,.8)"); }
+  if(R>50){
+    m.ring(ringPointsAt(o,R), {color:"rgba(255,179,71,0.55)", width:1.6, dash:[6,7]});
+    m.ring(ringPointsAt(o,R*0.5), {color:"rgba(255,179,71,0.16)", width:1, dash:[4,8]});
+  }
+  const cand=distanceList().slice(0,400);
+  const markers=[];
+  cand.forEach(function(c){
+    const inRange=c.km<=R;
+    if(!inRange && c.km>R*1.9) return;
+    if(!inRange && markers.length>140 && (c.km>R*1.35)) return;
+    const p=m.project(m.nearView(c.a.lon), c.a.lat);
+    if(p.x<-40||p.x>m.W+40||p.y<-30||p.y>m.H+30) return;
+    markers.push({a:c.a, km:c.km, x:p.x, y:p.y, inRange:inRange});
+  });
+  const labelWant=[];
+  markers.forEach(function(mk){
+    const sel=state.dest && state.dest.code===mk.a.code;
+    const r=sel? 6.5 : (mk.inRange? 3.8 : 2.6);
+    const col=sel? "#ffffff" : (mk.inRange? "#ffb347" : "rgba(120,140,170,0.7)");
+    m.dot(mk.a.lon, mk.a.lat, r, col, sel? "#20160a" : "rgba(5,10,20,.85)");
+    if(sel || mk.inRange) labelWant.push({code:mk.a.code, x:mk.x, y:mk.y, sel:sel, km:mk.km});
+  });
+  // labels: nearest first, and never on top of one another (origin label wins)
+  const placed=[];
+  (function(){
+    const hp=m.project(m.nearView(o.lon), o.lat);
+    m.ctx.save(); m.ctx.font="600 12px ui-monospace,Menlo,monospace";
+    const tw=m.ctx.measureText(o.code).width; m.ctx.restore();
+    placed.push({x:hp.x-tw/2-6, y:hp.y+7, w:tw+12, h:16});
+  })();
+  labelWant.sort(function(a,b){ return (b.sel?1:0)-(a.sel?1:0) || a.km-b.km; });
+  const ctx=m.ctx;
+  labelWant.forEach(function(l){
+    if(placed.length>18 && !l.sel) return;
+    ctx.save();
+    ctx.font="600 "+(l.sel?12.5:11)+"px ui-monospace,Menlo,monospace";
+    const tw=ctx.measureText(l.code).width;
+    const box={x:l.x-tw/2-5, y:l.y-23, w:tw+10, h:15};
+    const clash=placed.some(function(b){ return !(box.x+box.w < b.x || box.x > b.x+b.w || box.y+box.h < b.y || box.y > b.y+b.h); });
+    ctx.restore();
+    if(clash && !l.sel) return;
+    placed.push(box);
+    ctx.save();
+    ctx.font="600 "+(l.sel?12.5:11)+"px ui-monospace,Menlo,monospace";
+    ctx.fillStyle= l.sel? "rgba(255,179,71,0.92)" : "rgba(6,12,22,0.68)";
+    ctx.fillRect(box.x, box.y, box.w, box.h);
+    ctx.fillStyle= l.sel? "#20160a" : "#cfdcef"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(l.code, l.x, l.y-16);
+    ctx.restore();
+  });
+  m.label(o.lon, o.lat, o.code, false, "#48d597");
+  homeMapState.markers=markers;
+  homeDirty=false; lastHomeKey=m.key;
+}
+const homeMapState={markers:[]};
+
+/* ============================================================
+   FLIGHT ROUTE + AIRCRAFT
+   ============================================================ */
+let samples=[], planeScreen={x:0,y:0};
 const PHASES=[
-  {t:0.00,name:"TAXI",     alt:0,     spd:25 },
-  {t:0.03,name:"TAKEOFF",  alt:0,     spd:250},
-  {t:0.06,name:"CLIMB",    alt:0,     spd:520},
-  {t:0.15,name:"CRUISE",   alt:38000, spd:870},
-  {t:0.84,name:"CRUISE",   alt:38000, spd:870},
-  {t:0.93,name:"DESCENT",  alt:9000,  spd:600},
-  {t:0.98,name:"APPROACH", alt:1200,  spd:260},
-  {t:1.00,name:"LANDING",  alt:0,     spd:60 }
+  {t:0.00,name:"TAXI",alt:0,spd:25},{t:0.03,name:"TAKEOFF",alt:0,spd:250},
+  {t:0.06,name:"CLIMB",alt:0,spd:520},{t:0.15,name:"CRUISE",alt:38000,spd:870},
+  {t:0.84,name:"CRUISE",alt:38000,spd:870},{t:0.93,name:"DESCENT",alt:9000,spd:600},
+  {t:0.98,name:"APPROACH",alt:1200,spd:260},{t:1.00,name:"LANDING",alt:0,spd:60}
 ];
 function phaseAt(p){
   let a=PHASES[0], b=PHASES[PHASES.length-1];
   for(let i=0;i<PHASES.length-1;i++){ if(p>=PHASES[i].t && p<=PHASES[i+1].t){ a=PHASES[i]; b=PHASES[i+1]; break; } }
-  const span=(b.t-a.t)||1, u=Math.max(0,Math.min(1,(p-a.t)/span)), ease=u*u*(3-2*u);
-  return {name: u<0.5? a.name : b.name, alt: a.alt+(b.alt-a.alt)*ease, spd: a.spd+(b.spd-a.spd)*ease};
+  const span=(b.t-a.t)||1, u=Math.max(0,Math.min(1,(p-a.t)/span)), e=u*u*(3-2*u);
+  return {name: u<0.5? a.name : b.name, alt: a.alt+(b.alt-a.alt)*e, spd: a.spd+(b.spd-a.spd)*e};
 }
-
-/* ---------- flight HUD ---------- */
-function updateFlight(hard){
-  const leg=state.leg; if(!leg) return;
-  const p=routeProgress(), ph=phaseAt(p);
-  const el=tElapsed(state.focus), remain=Math.max(0, state.focus.total-el);
-  $("remainTxt").textContent=fmtDur(remain);
-  $("elapsedTxt").textContent=fmtDur(el);
-  $("spdTxt").textContent=Math.round(ph.spd)+" km/h";
-  $("altTxt").textContent=fmtNum(ph.alt)+" ft";
-  $("distTxt").textContent=fmtNum(leg.km*(1-p))+" km";
-  $("overTxt").textContent=pressureLabel(pointAt(p));
-  $("etaTxt").textContent=fmtClock(new Date(Date.now()+remain*1000));
-  $("phaseBadge").textContent = state.focus.running? ph.name : "HOLDING";
-  $("phaseBadge").className = "phase-chip" + (state.focus.running? "" : " hold");
-  $("ribFill").style.width=(p*100).toFixed(2)+"%";
-  $("ribPlane").style.left=(p*100).toFixed(2)+"%";
-  $("ribPct").textContent=Math.round(p*100)+"%";
-  $("flightNote").textContent="Real leg "+fmtHMin(leg.realMin)+" compressed into "+state.focusMin+" min of focus · "+fmtNum(leg.km)+" km great-circle · cruising at FL380.";
-  $("statusChip").textContent = state.focus.running? ("AIRBORNE "+leg.origin.code+"→"+leg.dest.code) : "HOLDING";
-  $("statusChip").className = "chip "+(state.focus.running?"live":"");
-  document.title = state.focus.running ? fmtDur(remain)+" → "+leg.dest.code+" · SKYFOCUS" : "SKYFOCUS — focus flight timer";
-  if(hard) $("pauseBtn").textContent = state.focus.running? "⏸ PAUSE" : "▶ RESUME";
+function routeProgress(){ return state.focus.total? Math.max(0, Math.min(1, tElapsed(state.focus)/state.focus.total)) : 0; }
+function pointAt(p){
+  if(!samples.length) return null;
+  const f=Math.max(0,Math.min(1,p))*(samples.length-1), i=Math.floor(f), u=f-i;
+  const a=samples[i], b=samples[Math.min(samples.length-1,i+1)];
+  return {lon:a.lon+(b.lon-a.lon)*u, lat:a.lat+(b.lat-a.lat)*u};
 }
-function pressureLabel(pt){
-  if(!pt) return "—";
-  // nearest airport in the table, purely as a rough position readout
-  let best=null, bd=1e9;
-  Object.keys(AIRPORTS).forEach(function(k){
-    const a=AIRPORTS[k], d=haversineKm(pt, a);
-    if(d<bd){ bd=d; best=a; }
-  });
-  return bd<600 ? ("near "+best.code+" · "+fmtNum(bd)+" km") : ("open ocean · "+fmtNum(bd)+" km to "+best.code);
+function buildRoute(){
+  if(!state.dest || !findAirport(state.origin)){ samples=[]; return; }
+  samples=gcSamples(findAirport(state.origin), state.dest, 160);
+}
+function fitFlightRoute(){
+  const o=findAirport(state.origin);
+  if(samples.length && o){ flightMap.fitTo(samples.concat([o, state.dest])); }
+}
+const PLANE_PATH=new Path2D("M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2A1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z");
+function drawFlight(){
+  const m=flightMap;
+  if(!m.W) m.size();
+  m.clear(); m.blit();
+  const o=findAirport(state.origin), d=state.dest;
+  if(!samples.length || !d) return;
+  const p=routeProgress(), idx=Math.max(0,Math.min(samples.length-1, Math.round(p*(samples.length-1))));
+  m.ring(samples, {color:"rgba(255,255,255,0.32)", width:1.8, dash:[7,7]});
+  m.ring(samples.slice(0, idx+1), {color:"#ffb347", width:2.6, glow:"rgba(255,179,71,.75)"});
+  m.label(o.lon, o.lat, o.code, false, "#48d597");
+  m.label(d.lon, d.lat, d.code, true, "#ffb347");
+  const pt=pointAt(p);
+  const x=m.px(pt.lon), y=m.py(pt.lat);
+  planeScreen={x:x, y:y, lon:pt.lon, lat:pt.lat};
+  const ctx=m.ctx, size=26;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x,y,size*0.62,0,Math.PI*2);
+  const hg=ctx.createRadialGradient(x,y,0,x,y,size*0.62);
+  hg.addColorStop(0,"rgba(10,18,32,0.5)"); hg.addColorStop(1,"rgba(10,18,32,0)");
+  ctx.fillStyle=hg; ctx.fill();
+  if(!REDUCED){
+    const pulse=(performance.now()%1600)/1600;
+    ctx.beginPath(); ctx.arc(x,y,size*0.55+pulse*size*0.75,0,Math.PI*2);
+    ctx.strokeStyle="rgba(255,255,255,"+(0.3*(1-pulse)).toFixed(3)+")"; ctx.lineWidth=1.2; ctx.stroke();
+  }
+  // the aircraft always points up, as asked - no heading rotation
+  ctx.translate(x,y); ctx.scale(size/24, size/24); ctx.translate(-12,-12);
+  ctx.fillStyle="#ffffff"; ctx.shadowColor="rgba(0,0,0,.75)"; ctx.shadowBlur=4;
+  ctx.fill(PLANE_PATH);
+  ctx.restore();
 }
 
 /* ============================================================
-   FLIGHT CONTROL
+   VOICE — pilot announcements (speech synthesis, tone fallback)
    ============================================================ */
-function show(name){
-  state.screen=name;
-  ["board","pass","flight","landed"].forEach(function(s){
-    document.getElementById("screen-"+s).classList.toggle("active", s===name);
-  });
-  if(name==="board"){ $("statusChip").textContent="ON GROUND"; $("statusChip").className="chip"; renderBoard(); renderLog(); }
-  if(name==="landed") renderLog();
-  if(name==="flight"){ sizeMap(); renderBase(); }
-}
-function beginBoarding(){
-  commitName();
-  const leg=state.leg; if(!leg) return;
-  tReset(state.focus, state.focusMin*60);
-  tStart(state.focus);
-  state.arrivedAt = new Date();
-  buildRoute();
-  show("flight");
-  sizeMap(); fitRoute(); renderBase();
-  $("routeTxt").innerHTML = leg.origin.code+" → "+leg.dest.code+" · <b>Focus Airways "+state.flightNo+"</b>";
-  $("ribFrom").textContent=leg.origin.code; $("ribTo").textContent=leg.dest.code;
-  $("ribFromCity").textContent=leg.origin.city; $("ribToCity").textContent=leg.dest.city;
-  ding(880,0.05);
-  updateFlight(true);
-}
-function togglePause(){
-  if(state.screen!=="flight") return;
-  if(state.focus.running) tPause(state.focus);
-  else if(tElapsed(state.focus) < state.focus.total) tStart(state.focus);
-  updateFlight(true);
-}
-$("pauseBtn").addEventListener("click", togglePause);
-$("delayBtn").addEventListener("click", function(){ if(state.screen==="flight"){ tAdd(state.focus,300); updateFlight(true); } });
-$("resetBtn").addEventListener("click", function(){
-  if(state.screen!=="flight") return;
-  tReset(state.focus, state.focusMin*60); tStart(state.focus); updateFlight(true);
-});
-$("divertBtn").addEventListener("click", function(){ if(state.screen==="flight") divert(); });
-$("beginBtn").addEventListener("click", beginBoarding);
-$("backBtn").addEventListener("click", function(){ show("board"); });
-
-function addLog(status, min, kmFlown, secs){
-  state.log.push({flight:state.flightNo, from:state.leg.origin.code, to:state.leg.dest.code,
-    min:min, km:kmFlown, realMin:state.leg.realMin, status:status, secs:Math.round(secs||0),
-    at:new Date().toISOString(), plan:state.focusMin});
-  save();
-}
-function divert(){
-  const el=tElapsed(state.focus), p=state.focus.total? Math.min(1, el/state.focus.total) : 0;
-  tPause(state.focus);
-  state.landedStatus="DIVERTED";
-  state.landedMin=Math.max(0, Math.round(el/60));
-  state.landedKm=Math.round(state.leg.km*p);
-  state.landedSecs=el;
-  addLog("DIVERTED", state.landedMin, state.landedKm, el);
-  land(false);
-}
-function land(completed){
-  if(completed===undefined) completed = tElapsed(state.focus) >= state.focus.total-0.5;
-  const el=Math.min(tElapsed(state.focus), state.focus.total);
-  if(completed){
-    tPause(state.focus);
-    state.landedStatus="LANDED";
-    state.landedMin=state.focusMin;
-    state.landedKm=state.leg.km;
-    state.landedSecs=el;
-    addLog("LANDED", state.focusMin, state.leg.km, el);
-    chime();
-    tReset(state.brk, 300);
-  }
-  state.arrivedAt = new Date();
-  state.screen="landed";
-  show("landed");
-  renderArrivalPass();
-  $("breakTxt").textContent="05:00";
-  $("breakBtn").textContent="☕ START BREAK";
-  $("statusChip").textContent = completed? "ARRIVED "+state.leg.dest.code : "DIVERTED";
-  $("statusChip").className="chip "+(completed?"ok":"live");
-  document.title="SKYFOCUS — focus flight timer";
-}
-$("breakBtn").addEventListener("click", function(){
-  if(state.brk.running){ tPause(state.brk); $("breakBtn").textContent="▶ RESUME BREAK"; }
-  else { tStart(state.brk); $("breakBtn").textContent="⏸ PAUSE BREAK"; }
-});
-$("skipBreakBtn").addEventListener("click", function(){ tReset(state.brk,300); $("breakTxt").textContent="05:00"; $("breakBtn").textContent="☕ START BREAK"; });
-$("nextBtn").addEventListener("click", function(){ state.leg=null; show("board"); });
-$("repeatBtn").addEventListener("click", function(){ if(state.leg) selectLeg(state.leg); });
-$("clearLogBtn").addEventListener("click", function(){ state.log=[]; save(); renderLog(); });
-
-/* ---------- logbook ---------- */
-function renderLog(){
-  let total=0, km=0;
-  state.log.forEach(function(e){ total+=e.min; km+=e.km; });
-  const summary="Total focus time logged: "+total+" min  ·  virtual distance flown: "+fmtNum(km)+" km  ·  "+state.log.length+" flight(s).";
-  [["logWrap","totalNote"],["logWrap2","totalNote2"]].forEach(function(pair){
-    const host=document.getElementById(pair[0]), note=document.getElementById(pair[1]);
-    if(note) note.textContent=summary;
-    if(!host) return;
-    if(!state.log.length){ host.innerHTML='<div class="empty">No flights logged yet. Every landed or diverted leg appears here.</div>'; return; }
-    let html="";
-    for(let i=state.log.length-1;i>=0;i--){
-      const e=state.log[i], d=new Date(e.at);
-      html += '<div class="logpass">' +
-        '<span class="lp-route">'+e.from+'→'+e.to+'</span>' +
-        '<span class="lp-route"><span style="color:var(--dim)">'+e.flight+'</span><em>'+(d.getMonth()+1)+'/'+d.getDate()+' '+fmtClock(d)+' · '+fmtHMin(e.realMin)+' real → '+e.plan+' min focus</em></span>' +
-        '<span class="lp-min">'+e.min+' min</span>' +
-        '<span><span class="tag '+(e.status==="LANDED"?"":"warn")+'">'+e.status+'</span> <span style="color:var(--dim2)">'+fmtNum(e.km)+' km</span></span>' +
-      '</div>';
-    }
-    host.innerHTML=html;
-  });
-}
-
-/* ---------- chrome ---------- */
-function tickClock(){
-  const d=new Date();
-  $("clockChip").textContent=fmtClock(d)+":"+String(d.getSeconds()).padStart(2,"0");
-}
-setInterval(tickClock,1000); tickClock();
-$("soundBtn").addEventListener("click", function(){ state.sound=!state.sound; save(); paintSound(); });
-function paintSound(){ $("soundBtn").textContent = state.sound? "🔔 SOUND ON" : "🔕 MUTED"; }
-
-/* ---------- audio (WebAudio, no assets) ---------- */
-let AC=null;
-function ac(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; } } return AC; }
-function tone(freq, dur, delay, gain){
-  const a=ac(); if(!a||!state.sound) return;
+const voiceLog=[];
+let ac=null;
+function audio(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ ac=null; } } return ac; }
+function tone(freq,dur,delay,gain){
+  const a=audio(); if(!a||!state.sound) return;
   const o=a.createOscillator(), g=a.createGain();
   o.type="sine"; o.frequency.value=freq;
   const t0=a.currentTime+(delay||0);
@@ -1158,40 +1001,623 @@ function tone(freq, dur, delay, gain){
   g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
   o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0+dur+0.05);
 }
-function ding(f,d){ tone(f||880, d||0.4, 0, 0.13); }
+function cabinChime(){ tone(1174,0.28,0,0.12); tone(1568,0.42,0.16,0.1); }
 function chime(){ tone(784,0.5,0,0.16); tone(1046,0.7,0.18,0.14); }
+let voice=null;
+function pickVoice(){
+  if(!window.speechSynthesis) return;
+  const vs=window.speechSynthesis.getVoices()||[];
+  voice = vs.find(function(v){ return /^en-GB/i.test(v.lang); })
+       || vs.find(function(v){ return /^en/i.test(v.lang); }) || null;
+}
+if(window.speechSynthesis){ pickVoice(); window.speechSynthesis.onvoiceschanged=pickVoice; }
+function say(text){                                   // pilot PA
+  if(!state.voice || !text) return;
+  voiceLog.push(text);
+  if(!window.speechSynthesis || !window.SpeechSynthesisUtterance){               // fallback: chime only
+    cabinChime();
+    return;
+  }
+  try{
+    const u=new window.SpeechSynthesisUtterance(text);
+    u.rate=0.98; u.pitch=0.85; u.volume=1;
+    if(voice) u.voice=voice;
+    window.speechSynthesis.speak(u);
+  }catch(e){ cabinChime(); }
+}
+const said={};
+function announce(key,text){
+  if(said[key]) return;
+  said[key]=true;
+  if(!state.sound && !state.voice) return;
+  if(state.sound) cabinChime();
+  setTimeout(function(){ say(text); }, state.sound? 420 : 0);
+}
 
-/* ---------- keyboard (guarded against typing in fields) ---------- */
+/* ============================================================
+   HOME SCREEN
+   ============================================================ */
+function updateHomeMeta(){
+  const R=reachableRadius();
+  $("reachLine").innerHTML = "reach <b>"+fmtNum(R)+" km</b> from "+state.origin+" at time-lapse ×"+state.comp;
+  const o=findAirport(state.origin);
+  $("fromChip").textContent = "FROM "+(o? o.code+" "+o.city : state.origin);
+  const n=distanceList().filter(function(c){ return c.km<=R; }).length;
+  $("homeStatus").textContent = n+" destinations within range · tap one, or search any airport";
+}
+function renderDestCard(){
+  const card=$("destCard");
+  if(!state.dest){
+    card.innerHTML='<div class="dc-hint">Tap a marker on the map to pick a leg, or search for any airport.</div>';
+    $("bookBtn").disabled=true;
+    return;
+  }
+  const leg=legTo(state.dest);
+  const need=Math.max(1, Math.round(leg.realMin/state.focusMin));
+  const inRange=leg.km<=reachableRadius();
+  card.innerHTML =
+    '<div class="dc-top"><span class="dc-code">'+leg.origin.code+' → '+leg.dest.code+'</span>'+
+    '<span class="dc-city">'+leg.dest.city+'</span></div>'+
+    '<div class="dc-meta">'+fmtNum(leg.km)+' km great-circle · real block time ≈ '+fmtHMin(leg.realMin)+
+      ' · <b>'+state.focusMin+' min</b> of focus (time-lapse ×'+need+')</div>'+
+    '<div class="dc-meta">'+(inRange? "✓ within the ×"+state.comp+" range for "+state.focusMin+" min"
+      : "⚠ beyond the standard ×"+state.comp+" range — this leg will run at ×"+need)+'</div>';
+  $("bookBtn").disabled=false;
+}
+function setSlider(v,refit){
+  markHome();
+  state.focusMin=Math.max(10, Math.min(120, v));
+  $("timeSlider").value=state.focusMin;
+  $("sliderVal").textContent=String(state.focusMin);
+  updateHomeMeta(); renderDestCard(); save();
+  if(refit!==false && !state.homeUserMoved) fitHome();
+}
+function fitHome(){
+  markHome();
+  const o=findAirport(state.origin); if(!o) return;
+  const R=reachableRadius();
+  // frame the neighbourhood: the home field plus the nearest legs, and include
+  // the range ring only when it actually fits in that picture
+  const pts=[{lon:o.lon, lat:o.lat}];
+  distanceList().slice(0,30).forEach(function(c){ pts.push({lon:c.a.lon, lat:c.a.lat}); });
+  if(R>150 && R<5500) ringPointsAt(o,R).forEach(function(p){ pts.push(p); });
+  homeMap.fitTo(pts, 9, 7);
+  homeMap.renderBase();
+  sizeBars();
+}
+function sizeBars(){
+  const b=document.querySelector("#screen-home .bottombar");
+  if(b){ const h=Math.round(b.getBoundingClientRect().height); if(h>40) document.documentElement.style.setProperty("--bar-h", h+"px"); }
+}
+function selectDest(a){
+  state.dest=a; renderDestCard(); markHome(); drawHome();
+  save();
+}
+function useNearestAirport(){
+  if(!navigator.geolocation){ sayNote("Location is not available in this browser."); return; }
+  sayNote("Asking the browser for your position…");
+  navigator.geolocation.getCurrentPosition(function(pos){
+    const me={lat:pos.coords.latitude, lon:pos.coords.longitude};
+    state.user=me;
+    let best=null, bd=1e9;
+    DB.forEach(function(a){ const d=haversineKm(me,a); if(d<bd){ bd=d; best=a; } });
+    if(best && bd<400){ state.origin=best.code; sayNote("Nearest airport: "+best.code+" "+best.city+" ("+fmtNum(bd)+" km)."); }
+    else { state.origin="SZX"; sayNote("Could not match a nearby airport (closest was "+fmtNum(bd)+" km) — staying on SZX."); }
+    distCache.origin=null; save(); updateHomeMeta(); fitHome(); drawHome();
+  }, function(){
+    sayNote("Location permission denied — using Shenzhen (SZX). Add a place manually in ＋ DESTINATION.");
+  }, {timeout:8000, maximumAge:600000});
+}
+let noteTimer=null;
+function sayNote(text){
+  $("homeStatus").textContent=text;
+  if(noteTimer) clearTimeout(noteTimer);
+  noteTimer=setTimeout(updateHomeMeta, 6000);
+}
+homeMapEl.addEventListener("click", function(e){
+  const r=homeMapEl.getBoundingClientRect();
+  const x=e.clientX-r.left, y=e.clientY-r.top;
+  let best=null, bd=18;
+  homeMapState.markers.forEach(function(mk){
+    const d=Math.hypot(mk.x-x, mk.y-y);
+    if(d<bd){ bd=d; best=mk; }
+  });
+  if(best){ selectDest(best.a); }
+  else{
+    const ll=homeMap.unproject(x,y);
+    let b2=null, bd2=26;
+    distanceList().slice(0,400).forEach(function(c){
+      const p=homeMap.project(homeMap.nearView(c.a.lon), c.a.lat);
+      const d=Math.hypot(p.x-x, p.y-y);
+      if(d<bd2){ bd2=d; b2=c.a; }
+    });
+    if(b2) selectDest(b2);
+  }
+});
+
+/* ============================================================
+   BOARDING PASS
+   ============================================================ */
+function barcodeHTML(seed,count){
+  let h=hash(seed), out="";
+  for(let i=0;i<(count||58);i++){
+    h=(h*1664525+1013904223)%4294967296;
+    const w=[1,1,2,3][h%4];
+    out+='<i style="flex:0 0 '+w+'px;width:'+w+'px;margin-right:'+(h%2===0?"2px":"4px")+';opacity:'+(h%7===0?"0.62":"1")+'"></i>';
+  }
+  return out;
+}
+function passHTML(opts){
+  const o=opts||{}, arrive=o.mode==="arrive";
+  const leg=arrive? {origin:o.origin, dest:o.dest, realMin:o.realMin, km:o.km} : legTo(state.dest);
+  const focusShow=arrive? o.focusMin : state.focusMin;
+  const departT=o.departT||new Date();
+  const arriveT=new Date(departT.getTime()+focusShow*60000);
+  const ratio=Math.max(1, Math.round(leg.realMin/Math.max(1,focusShow)));
+  return ''+
+  '<div class="pass" id="'+(arrive?"arrivalPass":"departurePass")+'">'+
+    '<div class="main">'+
+      '<div class="carrier"><span>FOCUS AIRWAYS · FOCUS CLASS</span><span>'+state.flightNo+'</span></div>'+
+      '<div class="route">'+
+        '<div><div class="code">'+leg.origin.code+'</div></div>'+
+        '<div class="arrow"><span class="planeico">✈</span> <small>TIME-LAPSE ×'+ratio+'</small></div>'+
+        '<div style="text-align:right"><div class="code">'+leg.dest.code+'</div></div>'+
+      '</div>'+
+      '<div class="cityline"><span>'+leg.origin.city+'</span><span>'+leg.dest.city+'</span></div>'+
+      '<div class="fields">'+
+        '<div class="f"><label>PASSENGER</label>'+
+          (arrive? '<div class="v" id="ap_name"></div>'
+                 : '<input class="nameinput" id="p_name" spellcheck="false"><div class="warnline" id="nameWarn">Name is blank — the pass will read FOCUS TRAVELLER.</div>')+
+        '</div>'+
+        '<div class="f"><label>'+(arrive?"FOCUS LOGGED":"FOCUS TIME")+'</label><div class="v big">'+focusShow+' min</div></div>'+
+        '<div class="f"><label>DEPARTS / ARRIVES</label><div class="v">'+fmtClock(departT)+' → '+fmtClock(arriveT)+'</div></div>'+
+        '<div class="f"><label>'+(arrive?"ACTUAL FLIGHT":"REAL BLOCK TIME")+'</label><div class="v">'+fmtHMin(leg.realMin)+(leg.km? " · "+fmtNum(leg.km)+" km":"")+'</div></div>'+
+      '</div>'+
+      '<div class="lapse"><span>⏱</span><span>Real routing compressed ×'+ratio+' — <b>'+focusShow+' min</b> of <b>'+state.subject+'</b> covers a <b>'+fmtHMin(leg.realMin)+'</b> flight'+(o.note? ' · '+o.note:'')+'.</span></div>'+
+      '<div class="barcode">'+barcodeHTML(state.flightNo+"|"+leg.origin.code+leg.dest.code+"|"+departT.toDateString())+'</div>'+
+    '</div>'+
+    '<div class="stub">'+
+      '<div class="klabel">GATE</div><div class="kval">'+state.gate+'</div>'+
+      '<div class="klabel">SEAT</div><div class="kval">'+state.seat+'</div>'+
+      '<div class="klabel">SESSION</div><div class="kval">'+state.subject+'</div>'+
+      '<div class="klabel">BAGGAGE</div><div class="kval">1 × DEEP WORK</div>'+
+      '<div class="klabel">FOCUS MIN</div><div class="code-big">'+focusShow+'</div>'+
+      '<div class="klabel">TIME-LAPSE ×'+ratio+'</div>'+
+      '<div class="vseats">FOCUS AIRWAYS</div>'+
+    '</div>'+
+    (arrive? '<div class="stampwrap"><div class="stamp '+(o.status==="DIVERTED"?"diverted":"")+'" id="stamp">'+o.status+
+      '<small>'+(o.status==="LANDED"?"ARRIVED":"DIVERTED")+' '+leg.dest.code+'</small></div></div>' : '')+
+  '</div>';
+}
+function renderPass(){
+  if(!state.dest){ show("home"); return; }
+  $("passHost").innerHTML=passHTML({mode:"depart"});
+  const input=$("p_name");
+  input.value=state.name;
+  input.addEventListener("input", function(){ validateName(true); });
+  input.addEventListener("blur", function(){ commitName(); input.value=state.name; validateName(false); });
+  validateName(false);
+  const leg=legTo(state.dest);
+  markHome();
+  $("passNote").innerHTML="Session type <b>"+state.subject+"</b> · base time-lapse ×"+state.comp+
+    " · boarding pass is a keepsake, the timer is the real thing.";
+  renderSubjectChips();
+}
+function validateName(showAlways){
+  const input=$("p_name"), warn=$("nameWarn");
+  if(!input) return true;
+  const blank=input.value.trim().length===0;
+  warn.classList.toggle("on", blank && (showAlways || input.value.length===0));
+  input.style.borderBottomColor = blank? "#d08a4a" : "#a39b88";
+  return !blank;
+}
+function commitName(){
+  const v=$("p_name").value.trim();
+  state.name = v.length? v : "FOCUS TRAVELLER";
+  save();
+}
+function renderSubjectChips(){
+  const host=$("subjectChips"); host.innerHTML="";
+  const list=PRESET_SUBJECTS.concat(state.subjects.filter(function(s){ return PRESET_SUBJECTS.indexOf(s)<0; }));
+  list.forEach(function(s){
+    const b=document.createElement("button");
+    b.className="chipbtn"+(state.subject===s?" on":""); b.textContent=s;
+    b.addEventListener("click", function(){ setSubject(s); });
+    host.appendChild(b);
+  });
+}
+function setSubject(s){
+  const v=(s||"").trim().toUpperCase();
+  state.subject = v.length? v.slice(0,28) : "FOCUS";
+  state.subjects=[state.subject].concat(state.subjects.filter(function(x){ return x!==state.subject; })).slice(0,8);
+  save(); renderSubjectChips(); renderPass();
+}
+
+/* ============================================================
+   FLIGHT CONTROL
+   ============================================================ */
+function show(name){
+  state.screen=name;
+  markHome();
+  ["home","pass","flight","landed"].forEach(function(s){
+    document.getElementById("screen-"+s).classList.toggle("active", s===name);
+  });
+  if(name==="home"){ homeMap.size(); fitHomeIfNeeded(); updateHomeMeta(); renderDestCard(); drawHome(); sizeBars(); }
+  if(name==="flight"){ flightMap.size(); flightMap.renderBase(); }
+  if(name==="landed"){ renderLog(); }
+}
+function fitHomeIfNeeded(){
+  if(!homeMap.W) homeMap.size();
+  if(!state.homeUserMoved) fitHome();
+}
+function beginBoarding(){
+  commitName();
+  if(!state.dest) return;
+  const leg=legTo(state.dest);
+  state.flightNo="FX"+String(1000+(hash(leg.origin.code+leg.dest.code+String(new Date().getDate()))%8999));
+  const h=hash(leg.origin.code+leg.dest.code);
+  state.gate=String.fromCharCode(65+(h%6))+String(1+(h%36));
+  state.seat=String(1+(h%30))+String.fromCharCode(65+(h%6));
+  state.arrivedAt=new Date();
+  tReset(state.focus, state.focusMin*60);
+  tStart(state.focus);
+  for(const k in said) delete said[k];
+  buildRoute();
+  show("flight");
+  flightMap.size(); fitFlightRoute(); flightMap.renderBase();
+  $("routeTxt").innerHTML=leg.origin.code+" → "+leg.dest.code+" · <b>Focus Airways "+state.flightNo+"</b>";
+  $("ribFrom").textContent=leg.origin.code; $("ribTo").textContent=leg.dest.code;
+  $("ribFromCity").textContent=leg.origin.city; $("ribToCity").textContent=leg.dest.city;
+  $("subjectTxt").textContent=state.subject;
+  announce("board","Focus Airways, cabin crew prepare for departure. This is flight "+state.flightNo+
+    " to "+(leg.dest.city||leg.dest.code)+", a "+state.focusMin+" minute "+state.subject+" session.");
+  updateFlight(true);
+}
+function togglePause(){
+  if(state.screen!=="flight") return;
+  if(state.focus.running){ tPause(state.focus); say("Holding. Your flight is paused."); }
+  else if(tElapsed(state.focus)<state.focus.total){ tStart(state.focus); say("Resuming the flight."); }
+  updateFlight(true);
+}
+$("beginBtn").addEventListener("click", beginBoarding);
+$("pauseBtn").addEventListener("click", togglePause);
+$("delayBtn").addEventListener("click", function(){ if(state.screen==="flight"){ tAdd(state.focus,300); updateFlight(true); } });
+$("resetBtn").addEventListener("click", function(){
+  if(state.screen!=="flight") return;
+  tReset(state.focus, state.focusMin*60); tStart(state.focus); updateFlight(true);
+});
+$("divertBtn").addEventListener("click", function(){ if(state.screen==="flight") divert(); });
+$("passBackBtn").addEventListener("click", function(){ show("home"); });
+$("passTimeDown").addEventListener("click", function(){ state.focusMin=Math.max(5,state.focusMin-5); renderPass(); save(); });
+$("passTimeUp").addEventListener("click", function(){ state.focusMin=Math.min(180,state.focusMin+5); renderPass(); save(); });
+$("subjectSave").addEventListener("click", function(){ setSubject($("subjectInput").value); $("subjectInput").value=""; });
+$("subjectInput").addEventListener("keydown", function(e){ if(e.key==="Enter"){ setSubject($("subjectInput").value); $("subjectInput").value=""; } });
+
+function addLog(status,min,kmFlown,secs){
+  state.log.push({flight:state.flightNo, from:state.origin, to:state.dest.code, min:min, km:kmFlown,
+    realMin:state.focusMin? blockMinutes(kmFlown||legTo(state.dest).km) : 0,
+    status:status, subject:state.subject, secs:Math.round(secs||0), at:new Date().toISOString(), plan:state.focusMin});
+  save();
+}
+function divert(){
+  const el=tElapsed(state.focus), leg=legTo(state.dest);
+  const p=state.focus.total? Math.min(1, el/state.focus.total) : 0;
+  tPause(state.focus);
+  state.landedStatus="DIVERTED"; state.landedMin=Math.max(0,Math.round(el/60));
+  state.landedKm=Math.round(leg.km*p); state.landedSecs=el;
+  addLog("DIVERTED", state.landedMin, state.landedKm, el);
+  land(false);
+}
+function land(completed){
+  if(completed===undefined) completed = tElapsed(state.focus)>=state.focus.total-0.5;
+  const el=Math.min(tElapsed(state.focus), state.focus.total);
+  const leg=legTo(state.dest);
+  if(completed){
+    tPause(state.focus);
+    state.landedStatus="LANDED"; state.landedMin=state.focusMin;
+    state.landedKm=leg.km; state.landedSecs=el;
+    addLog("LANDED", state.focusMin, leg.km, el);
+    chime();
+    say("Welcome to "+leg.dest.city+". "+state.focusMin+" minutes of "+state.subject+" logged. Local time "+
+      fmtClock(new Date())+".");
+  }
+  state.arrivedAt=new Date();
+  state.breakState="idle";
+  tReset(state.brk, state.breakLen*60);
+  show("landed");
+  renderArrivalPass();
+  paintBreak();
+  renderLog();
+}
+function renderArrivalPass(){
+  const leg={origin:findAirport(state.origin), dest:state.dest, realMin:blockMinutes(state.landedKm||legTo(state.dest).km), km:state.landedKm};
+  $("arrivalHost").innerHTML=passHTML({mode:"arrive", status:state.landedStatus, focusMin:state.landedMin,
+    km:state.landedKm, realMin:blockMinutes(legTo(state.dest).km), origin:leg.origin, dest:state.dest,
+    departT:state.arrivedAt||new Date(), note: state.landedStatus==="LANDED"? "gate to gate" : "landed early — distance credited to the point of diversion"});
+  const n=$("ap_name"); if(n) n.textContent=state.name;
+  const st=$("stamp");
+  if(st){ requestAnimationFrame(function(){ requestAnimationFrame(function(){ st.classList.add("show"); }); }); }
+}
+/* ---------- turnaround break ---------- */
+function paintBreak(){
+  const box=$("breakBox");
+  box.classList.toggle("done", state.breakState==="done"||state.breakState==="skipped");
+  const running=state.brk.running;
+  $("breakBtn").textContent = running? "⏸ PAUSE BREAK" : (state.breakState==="idle"? "☕ START BREAK" : "☕ START ANOTHER BREAK");
+  $("skipBreakBtn").textContent = state.breakState==="skipped"? "BREAK SKIPPED ✓" : "SKIP BREAK ▶";
+  $("breakTxt").textContent = state.breakState==="skipped"? "00:00" : fmtDur(Math.max(0, state.brk.total - tElapsed(state.brk)));
+  $("breakSub").textContent = state.breakState==="skipped"
+    ? "Break skipped — you are clear to board the next leg." :
+    (state.breakState==="done"? "Break complete — you are clear to board the next leg." : "Optional break before the next leg.");
+  $("breakNote").textContent = "Break length "+state.breakLen+" min. SKIP ends the break immediately — it never blocks the next flight.";
+  Array.prototype.forEach.call(document.querySelectorAll(".breaklen"), function(b){
+    b.style.borderColor = (+b.dataset.min===state.breakLen)? "#ffb347" : "";
+    b.style.color = (+b.dataset.min===state.breakLen)? "#ffb347" : "";
+  });
+}
+function startBreak(){
+  tReset(state.brk, state.breakLen*60);
+  tStart(state.brk);
+  state.breakState="running";
+  announce("break","Turnaround. Take "+(state.breakLen===5? "five" : state.breakLen===10? "ten minutes":"fifteen minutes")+". Next flight boards when you are ready.");
+  paintBreak();
+}
+function skipBreak(){
+  tPause(state.brk);
+  tReset(state.brk, state.breakLen*60);
+  state.breakState="skipped";
+  say("Break skipped. Boarding for the next flight.");
+  paintBreak();
+}
+$("breakBtn").addEventListener("click", function(){
+  if(state.brk.running){ tPause(state.brk); state.breakState="paused"; paintBreak(); }
+  else startBreak();
+});
+$("skipBreakBtn").addEventListener("click", skipBreak);
+Array.prototype.forEach.call(document.querySelectorAll(".breaklen"), function(b){
+  b.addEventListener("click", function(){
+    state.breakLen=+b.dataset.min; save();
+    if(!state.brk.running && state.breakState!=="done"){ tReset(state.brk, state.breakLen*60); state.breakState="idle"; }
+    paintBreak();
+  });
+});
+$("nextBtn").addEventListener("click", function(){ state.dest=null; show("home"); });
+$("repeatBtn").addEventListener("click", function(){ if(state.dest) show("pass"), renderPass(); });
+
+/* ---------- flight HUD ---------- */
+function updateFlight(hard){
+  const leg=legTo(state.dest); if(!leg) return;
+  const p=routeProgress(), ph=phaseAt(p);
+  const el=tElapsed(state.focus), remain=Math.max(0,state.focus.total-el);
+  $("remainTxt").textContent=fmtDur(remain);
+  $("elapsedTxt").textContent=fmtDur(el);
+  $("spdTxt").textContent=Math.round(ph.spd)+" km/h";
+  $("altTxt").textContent=fmtNum(ph.alt)+" ft";
+  $("distTxt").textContent=fmtNum(leg.km*(1-p))+" km";
+  $("etaTxt").textContent=fmtClock(new Date(Date.now()+remain*1000));
+  $("phaseBadge").textContent = state.focus.running? ph.name : "HOLDING";
+  $("phaseBadge").className = "phase-chip"+(state.focus.running?"":" hold");
+  $("speakerTag").textContent = state.voice? "🎙" : "";
+  $("ribFill").style.width=(p*100).toFixed(2)+"%";
+  $("ribPlane").style.left=(p*100).toFixed(2)+"%";
+  $("ribPct").textContent=Math.round(p*100)+"%";
+  document.title = state.focus.running? fmtDur(remain)+" → "+leg.dest.code+" · SKYFOCUS" : "SKYFOCUS — focus flight timer";
+  if(hard) $("pauseBtn").textContent = state.focus.running? "⏸ PAUSE" : "▶ RESUME";
+  if(state.focus.running){
+    if(ph.name==="CLIMB"||ph.name==="TAKEOFF") announce("climb","Airborne. Climbing to flight level three eight zero. Keep your "+state.subject+" in front of you.");
+    if(ph.name==="CRUISE") announce("cruise","Cruising at flight level three eight zero. "+fmtNum(remain/60)+" minutes to "+(leg.dest.city||leg.dest.code)+".");
+    if(ph.name==="DESCENT"||ph.name==="APPROACH") announce("descent","Beginning our descent into "+(leg.dest.city||leg.dest.code)+".");
+  }
+}
+$("zoomIn").addEventListener("click", function(){ flightMap.zoomBy(1.5); });
+$("zoomOut").addEventListener("click", function(){ flightMap.zoomBy(1/1.5); });
+$("zoomFit").addEventListener("click", function(){ fitFlightRoute(); flightMap.renderBase(); });
+$("homeZoomIn").addEventListener("click", function(){ state.homeUserMoved=true; homeMap.zoomBy(1.5); });
+$("homeZoomOut").addEventListener("click", function(){ state.homeUserMoved=true; homeMap.zoomBy(1/1.5); });
+$("homeFit").addEventListener("click", function(){ state.homeUserMoved=false; fitHome(); drawHome(); });
+
+/* ---------- pan / zoom ---------- */
+function attachPan(el, m){
+  let down=false, lx=0, ly=0, moved=0;
+  el.addEventListener("mousedown", function(e){ down=true; lx=e.clientX; ly=e.clientY; moved=0; el.classList.add("dragging"); });
+  window.addEventListener("mouseup", function(){ down=false; el.classList.remove("dragging"); });
+  window.addEventListener("mousemove", function(e){
+    if(!down) return;
+    m.pan(e.clientX-lx, e.clientY-ly);
+    moved+=Math.abs(e.clientX-lx)+Math.abs(e.clientY-ly);
+    lx=e.clientX; ly=e.clientY;
+    if(m===homeMap && moved>4){ state.homeUserMoved=true; markHome(); }
+  });
+  el.addEventListener("wheel", function(e){ e.preventDefault(); m.zoomBy(e.deltaY<0?1.12:1/1.12, e.clientX-el.getBoundingClientRect().left, e.clientY-el.getBoundingClientRect().top); if(m===homeMap){ state.homeUserMoved=true; markHome(); } }, {passive:false});
+  el.addEventListener("touchstart", function(e){ if(e.touches[0]){ lx=e.touches[0].clientX; ly=e.touches[0].clientY; } });
+  el.addEventListener("touchmove", function(e){
+    const t=e.touches[0]; if(!t) return;
+    m.pan(t.clientX-lx, t.clientY-ly); lx=t.clientX; ly=t.clientY;
+    if(m===homeMap) state.homeUserMoved=true;
+  }, {passive:true});
+}
+attachPan(homeMapEl, homeMap);
+attachPan(flightMapEl, flightMap);
+
+/* ============================================================
+   LOGBOOK / DRAWER / SEARCH
+   ============================================================ */
+function renderLog(){
+  let total=0, km=0;
+  state.log.forEach(function(e){ total+=e.min; km+=e.km||0; });
+  const summary="Total focus time logged: "+total+" min · virtual distance: "+fmtNum(km)+" km · "+state.log.length+" flight(s).";
+  [$("totalNote"),$("totalNote2")].forEach(function(n){ if(n) n.textContent=summary; });
+  const html=state.log.length? state.log.slice().reverse().map(function(e){
+    const d=new Date(e.at);
+    return '<div class="logpass"><span class="lp-route">'+e.from+'→'+e.to+'</span>'+
+      '<span class="lp-route"><span style="color:var(--dim)">'+e.flight+'</span><em>'+(d.getMonth()+1)+'/'+d.getDate()+' '+fmtClock(d)+
+      ' · '+e.plan+' min planned</em></span>'+
+      '<span class="lp-min">'+e.min+' min</span>'+
+      '<span><span class="tag subj">'+(e.subject||"—")+'</span> <span class="tag '+(e.status==="LANDED"?"":"warn")+'">'+e.status+'</span></span></div>';
+  }).join("") : '<div class="empty">No flights logged yet. Landed and diverted legs appear here with their session type.</div>';
+  [$("logWrap"),$("logWrap2")].forEach(function(h){ if(h) h.innerHTML=html; });
+  const cl=$("customList");
+  if(cl){
+    cl.innerHTML = state.custom.length
+      ? state.custom.map(function(c,i){ return '<div class="logpass"><span class="lp-route">'+c.code+'</span>'+
+          '<span class="lp-route">'+c.city+'<em>'+c.lat.toFixed(2)+'°, '+c.lon.toFixed(2)+'°</em></span>'+
+          '<span class="lp-min">'+fmtNum(haversineKm(findAirport(state.origin),c))+' km</span>'+
+          '<span><button class="sm ghost" data-del="'+i+'">remove</button></span></div>'; }).join("")
+      : '<div class="empty">No custom places yet. Add one from ＋ DESTINATION → ADD A PLACE MANUALLY.</div>';
+    Array.prototype.forEach.call(cl.querySelectorAll("[data-del]"), function(b){
+      b.addEventListener("click", function(){
+        const i=+b.dataset.del;
+        if(state.dest && state.dest.code===state.custom[i].code) state.dest=null;
+        state.custom.splice(i,1); save(); renderLog(); renderDestCard(); drawHome();
+      });
+    });
+  }
+}
+function openDrawer(tab){
+  $("drawer").classList.add("open");
+  Array.prototype.forEach.call(document.querySelectorAll(".tabbtn"), function(b){ b.classList.toggle("on", b.dataset.tab===tab); });
+  $("pane-info").classList.toggle("on", tab==="info");
+  $("pane-log").classList.toggle("on", tab==="log");
+  renderLog();
+}
+$("logBtn").addEventListener("click", function(){ openDrawer("log"); });
+$("infoBtn").addEventListener("click", function(){ openDrawer("info"); });
+$("drawerClose").addEventListener("click", function(){ $("drawer").classList.remove("open"); });
+Array.prototype.forEach.call(document.querySelectorAll(".tabbtn"), function(b){
+  b.addEventListener("click", function(){ openDrawer(b.dataset.tab); });
+});
+$("clearLogBtn").addEventListener("click", function(){ state.log=[]; save(); renderLog(); });
+/* ---------- destination search ---------- */
+let modalMode="dest";
+function openModal(mode){
+  modalMode=mode||"dest";
+  $("modal").classList.add("open");
+  $("modalTitle").textContent = modalMode==="origin"? "CHANGE DEPARTURE AIRPORT" : "FIND A DESTINATION";
+  $("searchInput").value=""; $("searchInput").focus();
+  renderSearch("");
+}
+function closeModal(){ $("modal").classList.remove("open"); }
+$("addDestBtn").addEventListener("click", function(){ openModal("dest"); });
+$("fromChip").addEventListener("click", function(){ openModal("origin"); });
+$("modalClose").addEventListener("click", closeModal);
+$("modal").addEventListener("click", function(e){ if(e.target===$("modal")) closeModal(); });
+$("searchInput").addEventListener("input", function(){ renderSearch($("searchInput").value); });
+function renderSearch(q){
+  const host=$("searchResults"); host.innerHTML="";
+  const query=(q||"").trim().toLowerCase();
+  if(query.length<1){ host.innerHTML='<div class="note">Type at least one letter. '+DB.length+' airports with scheduled service are searchable.</div>'; return; }
+  const o=findAirport(state.origin);
+  const hits=allAirports().filter(function(a){
+    if(a.code===state.origin) return false;
+    return a.code.toLowerCase().indexOf(query)===0 || (a.city||"").toLowerCase().indexOf(query)>=0 ||
+           (a.name||"").toLowerCase().indexOf(query)>=0 || (a.cc||"").toLowerCase()===query;
+  }).map(function(a){ return {a:a, km:haversineKm(o,a)}; })
+    .sort(function(p,r){ return p.km-r.km; }).slice(0,14);
+  if(!hits.length){ host.innerHTML='<div class="note">Nothing matched “'+q+'”. Use ADD A PLACE MANUALLY below.</div>'; return; }
+  hits.forEach(function(h){
+    const b=document.createElement("button");
+    b.className="result";
+    b.innerHTML='<span class="rcode">'+h.a.code+'</span>'+
+      '<span class="rcity">'+h.a.city+'<em>'+h.a.name+' · '+h.a.cc+'</em></span>'+
+      '<span class="rmeta">'+fmtNum(h.km)+' km<br>'+fmtHMin(blockMinutes(h.km))+' real</span>';
+    b.addEventListener("click", function(){
+      if(modalMode==="origin"){ state.origin=h.a.code; state.dest=null; }
+      else { state.dest=h.a; }
+      state.homeUserMoved=false; distCache.origin=null; save(); closeModal();
+      updateHomeMeta(); fitHome(); drawHome(); renderDestCard();
+    });
+    host.appendChild(b);
+  });
+}
+$("manAdd").addEventListener("click", function(){
+  const name=$("manName").value.trim()||"Custom place";
+  const code=($("manCode").value.trim()||name.slice(0,3)).toUpperCase().slice(0,4);
+  const lat=parseFloat($("manLat").value), lon=parseFloat($("manLon").value);
+  if(!isFinite(lat)||!isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180){
+    $("manNote").textContent="Latitude must be −90…90 and longitude −180…180.";
+    $("manNote").className="note"; return;
+  }
+  const place={code:code, city:name, name:"custom", cc:"—", lat:lat, lon:lon};
+  state.custom=state.custom.filter(function(c){ return c.code!==code; }).concat([place]);
+  if(modalMode==="origin") state.origin=code; else state.dest=place;
+  save(); closeModal(); state.homeUserMoved=false; distCache.origin=null;
+  $("manNote").textContent="";
+  updateHomeMeta(); fitHome(); drawHome(); renderDestCard(); renderLog();
+});
+$("manPick").addEventListener("click", function(){
+  $("manNote").textContent="Click anywhere on the map; the coordinates land in the boxes.";
+  pendingMapPick=true; closeModal();
+});
+$("geoBtn").addEventListener("click", useNearestAirport);
+let pendingMapPick=false;
+homeMapEl.addEventListener("click", function(e){
+  if(!pendingMapPick) return;
+  const r=homeMapEl.getBoundingClientRect();
+  const ll=homeMap.unproject(e.clientX-r.left, e.clientY-r.top);
+  $("manLat").value=ll.lat.toFixed(3); $("manLon").value=ll.lon.toFixed(3);
+  pendingMapPick=false; openModal(modalMode);
+  $("manNote").textContent="Coordinates captured — name the place and press ADD PLACE.";
+});
+
+/* ============================================================
+   CHROME
+   ============================================================ */
+function tickClock(){ const d=new Date(); $("clockChip").textContent=fmtClock(d)+":"+String(d.getSeconds()).padStart(2,"0"); }
+setInterval(tickClock,1000); tickClock();
+$("soundBtn").addEventListener("click", function(){ state.sound=!state.sound; save(); paintChrome(); });
+$("voiceBtn").addEventListener("click", function(){ state.voice=!state.voice; save(); paintChrome();
+  if(state.voice) say("Pilot announcements on."); });
+$("timeSlider").addEventListener("input", function(){ setSlider(+$("timeSlider").value, true); });
+$("bookBtn").addEventListener("click", function(){ if(state.dest){ renderPass(); show("pass"); } });
+function paintChrome(){
+  $("soundBtn").textContent = state.sound? "🔔 SOUND" : "🔕 MUTED";
+  $("soundBtn").className = "chip btn"+(state.sound? "":" off");
+  $("voiceBtn").textContent = "🎙 PILOT "+(state.voice? "ON":"OFF");
+  $("voiceBtn").className = "chip btn"+(state.voice? "":" off");
+  $("compInfo").textContent=String(state.comp);
+  $("compInfo2").textContent=String(state.comp);
+}
 window.addEventListener("keydown", function(e){
-  const t=e.target, tag=t && t.tagName;
+  const t=e.target, tag=t&&t.tagName;
   if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"||(t&&t.isContentEditable)) return;
   if(e.code==="Space"){ if(state.screen==="flight"){ e.preventDefault(); togglePause(); } }
   else if(e.key==="d"||e.key==="D"){ if(state.screen==="flight"){ e.preventDefault(); tAdd(state.focus,300); updateFlight(true); } }
   else if(e.key==="r"||e.key==="R"){ if(state.screen==="flight"){ e.preventDefault(); tReset(state.focus,state.focusMin*60); tStart(state.focus); updateFlight(true); } }
-  else if(e.key==="Escape"){ if(state.screen==="flight"){ e.preventDefault(); divert(); } }
-  else if(e.key==="f"||e.key==="F"){ if(state.screen==="flight"){ e.preventDefault(); fitRoute(); } }
+  else if(e.key==="Escape"){ if($("modal").classList.contains("open")) closeModal();
+    else if($("drawer").classList.contains("open")) $("drawer").classList.remove("open");
+    else if(state.screen==="flight") divert(); }
+  else if(e.key==="f"||e.key==="F"){ if(state.screen==="flight"){ e.preventDefault(); fitFlightRoute(); flightMap.renderBase(); } }
+  else if((e.key==="k"||e.key==="K") && e.metaKey){ e.preventDefault(); openDrawer("log"); }
 });
 
 /* ============================================================
    FRAME LOOP
    ============================================================ */
 if(window.ResizeObserver){
-  new ResizeObserver(function(){ if(state.screen==="flight"){ sizeMap(); renderBase(); } }).observe(mapEl);
-} else window.addEventListener("resize", function(){ if(state.screen==="flight"){ sizeMap(); renderBase(); } });
-
+  new ResizeObserver(function(){ sizeBars();
+    if(state.screen==="home"){ homeMap.size(); fitHomeIfNeeded(); drawHome(); }
+    if(state.screen==="flight"){ flightMap.size(); flightMap.renderBase(); } }).observe(document.body);
+}
 function frame(now){
   const dt=Math.min(0.05,(now-state.lastNow)/1000)||0;
-  state.lastNow=now; state.dt=dt;
+  state.lastNow=now;
   if(state.screen==="flight"){
     const el=tElapsed(state.focus);
     if(state.focus.running && el>=state.focus.total-1e-6){ updateFlight(true); land(true); }
-    else updateFlight(false);
-    drawMap();
+    else { updateFlight(false); drawFlight(); }
+  } else if(state.screen==="home"){
+    if(homeDirty || homeMap.key!==lastHomeKey) drawHome();
   }
-  if(state.brk.total>0){
+  if(state.brk.total>0 && state.screen==="landed"){
     const left=Math.max(0, state.brk.total-Math.min(state.brk.total, tElapsed(state.brk)));
-    $("breakTxt").textContent=fmtDur(left).replace(/^00:/,"")||"05:00";
-    if(state.brk.running && left<=0.05){ tPause(state.brk); $("breakBtn").textContent="☕ START BREAK"; $("breakTxt").textContent="00:00"; }
+    if(state.brk.running){
+      $("breakTxt").textContent=fmtDur(left);
+      if(left<=0.05){
+        tPause(state.brk); state.breakState="done";
+        chime(); say("Break complete. Ready for the next flight.");
+        paintBreak();
+      }
+    }
   }
   requestAnimationFrame(frame);
 }
@@ -1200,89 +1626,43 @@ function frame(now){
    BOOT
    ============================================================ */
 load();
-buildOriginSelect();
-renderBoard();
+if(!state.dest) state.dest=null;
+paintChrome();
+setSlider(state.focusMin, false);
+renderSubjectChips();
 renderLog();
-paintSound();
-show("board");
+show("home");
 requestAnimationFrame(function(now){ state.lastNow=now; requestAnimationFrame(frame); });
 
 /* ---------- console handle ---------- */
 window.TOOL = {
-  version:VERSION,
-  state:state,
-  get destinations(){ return routesFor(state.origin); },
-  get log(){ return state.log; },
+  version:VERSION, state:state, layers:LAYERS,
+  get homeMap(){ return homeMap; }, get flightMap(){ return flightMap; },
+  get markers(){ return homeMapState.markers; },
+  get reach(){ return reachableRadius(); },
   get progress(){ return routeProgress(); },
   get remaining(){ return Math.max(0, state.focus.total - tElapsed(state.focus)); },
   get samples(){ return samples; },
-  get planeScreen(){ return state.planeScreen; },
-  layers:LAYERS,
-  setLayers:function(o){ Object.keys(o||{}).forEach(function(k){ LAYERS[k]=!!o[k]; }); baseReady=false; renderBase(); },
-  get map(){ return {W:W, H:H, zoom:view.zoom, lon0:view.lon0, lat0:view.lat0, dpr:DPR, landRings:LAND.length, borderRings:BORDERS.length, points:(LAND.reduce(function(a,r){return a+r.length/2;},0)+BORDERS.reduce(function(a,r){return a+r.length/2;},0)), baseKey:baseKey}; },
-  routesFor:routesFor, focusMinutesFor:focusMinutesFor, phaseAt:phaseAt, haversineKm:haversineKm,
-  gcPoint:gcPoint, gcSamples:gcSamples, pointAt:pointAt, fitRoute:fitRoute,
-  project:function(lon,lat){ return {x:projX(lon), y:projY(lat)}; },
-  nearView:nearView, markerPos:function(a){ return {x:projX(nearView(a.lon)), y:projY(a.lat)}; },
-  renderRing:function(i){                      // diagnostics: draw one ring alone
-    const ring=LAND[i]; if(!ring) return null;
-    const band=[view.lon0-180, view.lon0+180];
-    const k=shiftFor(ring);
-    const pieces=clipRing(ringBase(ring).pts, band[0]-k*360, band[1]-k*360);
-    const cs=document.createElement('canvas'); cs.width=W; cs.height=H;
-    const c=cs.getContext('2d');
-    c.fillStyle="#fff";
-    pieces.forEach(function(pc){ const p=new Path2D(); addPiece(p,pc,k); c.fill(p); });
-    const d=c.getImageData(0,0,W,H).data;
-    let px=0, minx=1e9,maxx=-1e9,miny=1e9,maxy=-1e9;
-    for(let y=0;y<H;y+=1) for(let x=0;x<W;x+=1){ if(d[(y*W+x)*4+3]>0){ px++;
-      if(x<minx)minx=x; if(x>maxx)maxx=x; if(y<miny)miny=y; if(y>maxy)maxy=y; } }
-    return {i:i, pts:ring.length/2, shift:k, pieces:pieces.length,
-      piecePts:pieces.map(function(p){return p.length;}), filledPx:px,
-      box:[minx,maxx,miny,maxy].map(function(v){return v===1e9?-1:Math.round(v);}),
-      bbox:bboxOf(ring).map(function(v){return +v.toFixed(1);}), band:band.map(function(v){return +v.toFixed(1);})};
-  },
-  pieceWindings:function(){
-    const band=[view.lon0-180, view.lon0+180], wind=[0,0];
-    LAND.forEach(function(ring){
-      const k=shiftFor(ring);
-      clipRing(ringBase(ring).pts, band[0]-k*360, band[1]-k*360).forEach(function(pc){
-        wind[signedArea(pc)<0?1:0]++;
-      });
-    });
-    return {positive:wind[0], negative:wind[1]};
-  },
-  ringInfo:function(lon,lat){                 // diagnostics: how is this ring treated?
-    const band=[view.lon0-180, view.lon0+180];
-    const hits=[];
-    LAND.forEach(function(ring,i){
-      const b=bboxOf(ring);
-      if(lon<b[0]-6||lon>b[1]+6||lat<b[2]-6||lat>b[3]+6) return;
-      const un=ringBase(ring).pts;
-      let mn=1e9,mx=-1e9,mean=0;
-      for(let j=0;j<un.length;j+=2){ if(un[j]<mn)mn=un[j]; if(un[j]>mx)mx=un[j]; mean+=un[j]; }
-      mean/=(un.length/2);
-      const pieces=clipRing(un, band[0], band[1]);
-      hits.push({i:i, pts:ring.length/2, rawBbox:[+b[0].toFixed(1),+b[1].toFixed(1),+b[2].toFixed(1),+b[3].toFixed(1)],
-        mean:+mean.toFixed(1), unwrapped:[+mn.toFixed(1),+mx.toFixed(1)], pieces:pieces.length,
-        pieceBBox:pieces.map(function(pc){ let a=1e9,b2=-1e9,c=1e9,d=-1e9;
-          pc.forEach(function(p){ if(p[0]<a)a=p[0]; if(p[0]>b2)b2=p[0]; if(p[1]<c)c=p[1]; if(p[1]>d)d=p[1]; });
-          return [+projX(a).toFixed(0),+projX(b2).toFixed(0),+projY(d).toFixed(0),+projY(c).toFixed(0)]; })});
-    });
-    return {band:band.map(function(v){return +v.toFixed(1);}), view:{lon0:+view.lon0.toFixed(1),zoom:+view.zoom.toFixed(2),W:W,H:H}, hits:hits.slice(0,6)};
-  },
-  unproject:function(x,y){ return {lon:invLon(x), lat:invLat(y)}; },
-  zoomBy:zoomBy,
-  origin:function(c){ state.origin=c; $("originSel").value=c; renderBoard(); },
-  pick:function(code){ const l=routesFor(state.origin).find(function(x){ return x.dest.code===code; }); if(l) selectLeg(l); return l||null; },
+  get planeScreen(){ return planeScreen; },
+  get voiceLog(){ return voiceLog; },
+  get said(){ return Object.keys(said); },
+  airports:function(){ return allAirports(); },
+  findAirport:findAirport, legTo:legTo, nearby:nearbyDestinations,
+  haversineKm:haversineKm, gcPoint:gcPoint, pointAt:pointAt, blockMinutes:blockMinutes, focusMinutes:focusMinutes, reachKm:reachKm,
+  offsetPoint:offsetPoint, ringPointsAt:ringPointsAt, phaseAt:phaseAt,
+  setOrigin:function(code){ state.origin=code; state.dest=null; state.homeUserMoved=false; updateHomeMeta(); fitHome(); drawHome(); renderDestCard(); },
+  select:function(code){ const a=findAirport(code); if(a) selectDest(a); return a; },
+  addCustom:function(o){ state.custom.push(o); save(); renderLog(); return o; },
+  setSubject:setSubject,
+  setSlider:function(v){ setSlider(v,true); },
+  show:show, render:function(){ updateFlight(true); drawFlight(); drawHome(); },
   begin:beginBoarding, pause:togglePause, delay:function(s){ tAdd(state.focus,s||300); },
   reset:function(){ tReset(state.focus,state.focusMin*60); tStart(state.focus); updateFlight(true); },
   advance:function(sec){ tAdvance(state.focus,sec); tAdvance(state.brk,sec); },
-  land:function(ok){ land(ok!==false); },
-  divert:divert, show:show,
-  render:function(){ updateFlight(true); drawMap(); },
-  drawMap:drawMap,
-  setFocusMin:function(m){ state.focusMin=Math.max(1,m); renderDeparturePass(); }
+  land:function(ok){ land(ok!==false); }, divert:divert,
+  startBreak:startBreak, skipBreak:skipBreak, setBreakLen:function(m){ state.breakLen=m; tReset(state.brk,m*60); state.breakState="idle"; paintBreak(); },
+  search:function(q){ renderSearch(q); return document.querySelectorAll("#searchResults .result").length; },
+  openModal:openModal
 };
 })();
 </script>

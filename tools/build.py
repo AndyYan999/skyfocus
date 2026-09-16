@@ -1,32 +1,35 @@
 #!/usr/bin/env python3
-"""Assemble index.html from src/template.html + src/mapdata.js.
+"""Assemble index.html from src/template.html + the generated data files.
 
-The template carries a `<script>/*__MAPDATA__*/</script>` placeholder; the world
-map data is injected there so the shipped index.html stays a single
+The template carries <script>/*__MAPDATA__*/</script> and
+<script>/*__AIRPORTS__*/</script> placeholders; the world map polygons and the
+airport list are injected there so the shipped index.html stays a single
 self-contained file with no network access at runtime.
 
 Usage:  python3 tools/build.py
 """
-import json
 import os
-import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TPL = os.path.join(ROOT, "src", "template.html")
-DATA = os.path.join(ROOT, "src", "mapdata.js")
 OUT = os.path.join(ROOT, "index.html")
-PLACEHOLDER = "/*__MAPDATA__*/"
+PARTS = {"/*__MAPDATA__*/": ("mapdata.js", "window.MAPDATA={q:20,l:[],b:[]};"),
+         "/*__AIRPORTS__*/": ("airports.js", "window.AIRPORTS_DB=[];")}
 
 
 def main():
     tpl = open(TPL).read()
-    data = open(DATA).read().strip() if os.path.exists(DATA) else "window.MAPDATA={q:20,l:[],b:[]};"
-    if PLACEHOLDER not in tpl:
-        sys.exit("placeholder %s not found in %s" % (PLACEHOLDER, TPL))
-    html = tpl.replace(PLACEHOLDER, data)
-    open(OUT, "w").write(html)
-    print("built %s  (%.1f KB, map data %.1f KB)" % (OUT, len(html) / 1024.0, len(data) / 1024.0))
+    sizes = []
+    for placeholder, (name, fallback) in PARTS.items():
+        if placeholder not in tpl:
+            sys.exit("placeholder %s not found in %s" % (placeholder, TPL))
+        path = os.path.join(ROOT, "src", name)
+        data = open(path).read().strip() if os.path.exists(path) else fallback
+        tpl = tpl.replace(placeholder, data)
+        sizes.append("%s %.1f KB" % (name, len(data) / 1024.0))
+    open(OUT, "w").write(tpl)
+    print("built %s (%.1f KB) | %s" % (OUT, len(tpl) / 1024.0, ", ".join(sizes)))
 
 
 if __name__ == "__main__":
