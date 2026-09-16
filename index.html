@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SKYFOCUS — focus flight timer</title>
+<style>
+  :root{
+    --bg:#070b14; --panel:#0e1626; --panel2:#121c30; --line:#1e2b45; --line2:#27364f;
+    --ink:#e8eef8; --dim:#8ba0bf; --dim2:#63779a;
+    --amber:#ffb347; --blue:#4da3ff; --green:#48d597; --red:#ff6b6b;
+    --paper:#f4f1e8; --paper-ink:#141a22; --paper-dim:#6b7280;
+    --ease:cubic-bezier(.4,0,.2,1); --dur:.22s;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1200px 700px at 15% -10%, #16233c 0%, transparent 60%),
+      radial-gradient(900px 600px at 100% 0%, #1a2138 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink); font-family:var(--sans); -webkit-font-smoothing:antialiased;
+    min-height:100%;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 20px 60px}
+
+  /* ---------- header ---------- */
+  header.top{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:14px 16px;border:1px solid var(--line);border-radius:16px;
+    background:linear-gradient(180deg,#101a2c,#0b1322);
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--mono);letter-spacing:.16em;font-size:13px}
+  .brand .mark{
+    width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+    background:linear-gradient(140deg,var(--amber),#ff8a3d);color:#20160a;font-size:16px;
+    box-shadow:0 6px 18px rgba(255,138,61,.25);
+  }
+  .brand b{font-weight:700}
+  .brand small{display:block;color:var(--dim2);letter-spacing:.1em;font-size:10px;margin-top:2px}
+  .top .spacer{flex:1}
+  .chip{
+    font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--dim);
+    border:1px solid var(--line2);border-radius:999px;padding:6px 11px;background:#0b1424;
+    transition:color var(--dur) var(--ease),border-color var(--dur) var(--ease),background var(--dur) var(--ease);
+  }
+  .chip.live{color:var(--amber);border-color:#5a4420;background:#1a1408}
+  .chip.ok{color:var(--green);border-color:#1d4a37;background:#0a1d16}
+
+  /* ---------- buttons ---------- */
+  button{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--ink);cursor:pointer;
+    background:#152238;border:1px solid var(--line2);border-radius:10px;padding:10px 14px;
+    transition:background var(--dur) var(--ease),border-color var(--dur) var(--ease),color var(--dur) var(--ease),transform .12s var(--ease),box-shadow var(--dur) var(--ease);
+  }
+  button:hover{background:#1c2c48;border-color:#3a4d70}
+  button:active{transform:scale(.9)}
+  button:disabled{opacity:.45;cursor:default;transform:none}
+  button.primary{background:linear-gradient(140deg,var(--amber),#ff9a3c);color:#22160a;border-color:#ffc27a;font-weight:700}
+  button.primary:hover{background:linear-gradient(140deg,#ffc163,#ffa552);box-shadow:0 8px 24px rgba(255,154,60,.28)}
+  button.ghost{background:transparent}
+  button.ghost:hover{background:#141f34}
+  button.danger{color:#ffc9c9;border-color:#4a2430;background:#1c1116}
+  button.danger:hover{background:#2a151c;border-color:#6d2f3d}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+  /* ---------- screens ---------- */
+  .screen{display:none}
+  .screen.active{display:block;animation:screen .34s var(--ease)}
+  @keyframes screen{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  .cols{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-top:18px}
+  @media (max-width:940px){.cols{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .panel h2{margin:0 0 4px;font-size:13px;font-family:var(--mono);letter-spacing:.16em;color:var(--dim)}
+  .panel .sub{color:var(--dim2);font-size:12px;margin:0 0 14px}
+
+  /* ---------- origin ---------- */
+  .originbox{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  select{
+    font-family:var(--mono);font-size:13px;color:var(--ink);background:#0b1424;border:1px solid var(--line2);
+    border-radius:10px;padding:10px 12px;transition:border-color var(--dur) var(--ease),background var(--dur) var(--ease);
+  }
+  select:hover{border-color:#3a4d70}
+  .originmeta{font-family:var(--mono);font-size:11px;color:var(--dim2)}
+
+  /* ---------- destination rows ---------- */
+  .dlist{display:flex;flex-direction:column;gap:8px;max-height:520px;overflow:auto;padding-right:4px}
+  .drow{
+    display:grid;grid-template-columns:74px 1fr auto auto;gap:12px;align-items:center;text-align:left;
+    background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+  }
+  .drow:hover{border-color:#3f5a86;background:#16223a}
+  .drow .code{font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:.06em}
+  .drow .code small{display:block;font-weight:400;color:var(--dim2);font-size:10px;letter-spacing:.08em}
+  .drow .city{font-size:13px}
+  .drow .city em{display:block;font-style:normal;color:var(--dim2);font-size:11px;font-family:var(--mono);margin-top:3px}
+  .drow .real{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:right;line-height:1.5}
+  .drow .real b{display:block;color:var(--ink);font-size:13px}
+  .focuspill{
+    font-family:var(--mono);font-size:12px;color:#20160a;background:linear-gradient(140deg,var(--amber),#ffa14a);
+    border-radius:8px;padding:7px 10px;min-width:74px;text-align:center;font-weight:700;
+  }
+  .focuspill span{display:block;font-size:9px;letter-spacing:.1em;font-weight:500;color:#3d2a10}
+
+  /* ---------- boarding pass ---------- */
+  .passwrap{display:grid;grid-template-columns:1fr 300px;gap:18px;margin-top:18px}
+  @media (max-width:940px){.passwrap{grid-template-columns:1fr}}
+  .pass{
+    position:relative;background:var(--paper);color:var(--paper-ink);border-radius:14px;
+    display:grid;grid-template-columns:1fr 210px;overflow:hidden;
+    box-shadow:0 18px 50px rgba(0,0,0,.5);
+  }
+  @media (max-width:700px){.pass{grid-template-columns:1fr}}
+  .pass .main{padding:20px 22px}
+  .pass .stub{
+    padding:20px 16px;background:#e9e5d8;border-left:2px dashed #b9b3a2;position:relative;
+  }
+  .pass .stub::before,.pass .stub::after{
+    content:"";position:absolute;left:-11px;width:22px;height:22px;border-radius:50%;background:var(--bg);
+  }
+  .pass .stub::before{top:-11px}
+  .pass .stub::after{bottom:-11px}
+  .pass .carrier{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:#3c4657;border-bottom:1px solid #cfc9b8;padding-bottom:12px}
+  .pass .route{display:flex;align-items:flex-end;gap:14px;margin:16px 0 6px;font-family:var(--mono)}
+  .pass .route .code{font-size:40px;font-weight:700;line-height:1}
+  .pass .route .arrow{flex:1;text-align:center;color:#8d8574;font-size:14px;padding-bottom:6px;position:relative}
+  .pass .route .arrow::before{content:"";position:absolute;left:8px;right:8px;top:7px;border-top:2px dashed #c6c0af}
+  .pass .route .arrow span.planeico{position:relative;background:var(--paper);padding:0 9px}
+  .pass .route .arrow small{display:block;font-size:9px;letter-spacing:.12em;margin-top:6px;color:#6b6353}
+  .pass .cityline{display:flex;justify-content:space-between;font-size:11px;color:var(--paper-dim);font-family:var(--mono);letter-spacing:.06em}
+  .fields{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+  @media (max-width:600px){.fields{grid-template-columns:repeat(2,1fr)}}
+  .fields .f{border-top:1px solid #cfc9b8;padding-top:8px}
+  .fields .f label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:#8d8574;margin-bottom:4px}
+  .fields .f .v{font-family:var(--mono);font-size:13px}
+  .fields .f .v.big{font-size:17px;font-weight:700}
+  .nameinput{
+    font-family:var(--mono);font-size:13px;color:var(--paper-ink);background:#efebdd;border:1px solid transparent;
+    border-bottom:1px dashed #a39b88;border-radius:6px 6px 0 0;padding:4px 6px;width:100%;
+    transition:border-color var(--dur) var(--ease),background var(--dur) var(--ease);
+  }
+  .nameinput:focus{outline:none;border-color:var(--amber);background:#fff8e6}
+  .lapse{
+    display:flex;align-items:center;gap:8px;margin-top:14px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    color:#5c5648;background:#e4dfd0;border-radius:8px;padding:9px 11px
+  }
+  .lapse b{color:#20160a}
+  .barcode{display:flex;gap:2px;height:56px;margin-top:14px;align-items:stretch}
+  .barcode i{background:#141a22;display:block}
+  .stub .code-big{font-family:var(--mono);font-size:34px;font-weight:700;letter-spacing:.04em;margin:6px 0 2px}
+  .stub .klabel{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:#8d8574}
+  .stub .kval{font-family:var(--mono);font-size:12px;margin-bottom:10px}
+  .stub .vseats{writing-mode:vertical-rl;position:absolute;right:8px;bottom:14px;font-family:var(--mono);
+    font-size:10px;letter-spacing:.24em;color:#a49c88}
+
+  /* ---------- flight view ---------- */
+  .flightgrid{display:grid;grid-template-columns:1.3fr .7fr;gap:18px;margin-top:18px}
+  @media (max-width:940px){.flightgrid{grid-template-columns:1fr}}
+  .windowpane{
+    position:relative;border-radius:52px;background:linear-gradient(180deg,#2a3244,#1b2130);
+    padding:16px;border:1px solid #38425a;box-shadow:inset 0 6px 20px rgba(0,0,0,.6),0 20px 50px rgba(0,0,0,.45);
+  }
+  .windowpane .glass{position:relative;border-radius:38px;overflow:hidden;aspect-ratio:16/10;background:#050a16}
+  .windowpane canvas{display:block;width:100%;height:100%}
+  .windowpane .badge{
+    position:absolute;left:22px;top:22px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+    color:#dbe6f7;background:rgba(6,12,24,.55);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 11px;
+    backdrop-filter:blur(6px);
+  }
+  .windowpane .badge.right{left:auto;right:22px}
+
+  /* HUD */
+  .hud{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px}
+  .remain{font-family:var(--mono);font-size:56px;line-height:1;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+  .remain small{display:block;font-size:10px;letter-spacing:.2em;color:var(--dim2);margin-bottom:8px}
+  .hudrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .kv{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 11px}
+  .kv label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--dim2);margin-bottom:5px}
+  .kv .v{font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums}
+  .route{font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .route b{color:var(--ink)}
+
+  /* ribbon */
+  .ribbon{margin-top:18px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px 14px}
+  .ribbon .ends{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--dim);margin-bottom:10px}
+  .ribbon .ends b{color:var(--ink);font-size:15px}
+  .track{position:relative;height:4px;border-radius:999px;background:#1c2942;margin:0 6px}
+  .fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:999px;background:linear-gradient(90deg,#2f6fbf,var(--amber))}
+  .rubber{position:absolute;left:0;right:0;top:-7px;height:18px}
+  .rubber .tick{position:absolute;top:0;width:1px;height:6px;background:#2a3a58}
+  .plane{
+    position:absolute;top:-13px;left:0;transform:translate(-50%,0) rotate(90deg);font-size:18px;
+    transition:left .4s linear;color:var(--amber);filter:drop-shadow(0 0 8px rgba(255,179,71,.45));
+  }
+  .ribbonticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--dim2);margin-top:10px}
+
+  /* landed */
+  .landed{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+  @media (max-width:940px){.landed{grid-template-columns:1fr}}
+  .stamp{
+    display:inline-block;font-family:var(--mono);font-size:30px;font-weight:700;letter-spacing:.16em;
+    color:#ff7a59;border:4px double #ff7a59;border-radius:12px;padding:12px 20px;transform:rotate(-9deg);
+    opacity:0;text-shadow:0 0 22px rgba(255,122,89,.35);
+  }
+  .stamp.show{opacity:.92;transition:opacity .5s var(--ease)}
+  .stamp.diverted{color:#ffb347;border-color:#ffb347;text-shadow:0 0 22px rgba(255,179,71,.3)}
+  .logtable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+  .logtable th{text-align:left;color:var(--dim2);font-weight:400;letter-spacing:.1em;font-size:9.5px;
+    border-bottom:1px solid var(--line);padding:8px 6px}
+  .logtable td{padding:9px 6px;border-bottom:1px solid #16223a;color:var(--ink)}
+  .logtable td.dim{color:var(--dim)}
+  .tag{font-size:9.5px;letter-spacing:.1em;border-radius:6px;padding:3px 7px;border:1px solid #1d4a37;color:var(--green);background:#0a1d16}
+  .tag.warn{border-color:#5a4420;color:var(--amber);background:#1a1408}
+  .empty{color:var(--dim2);font-family:var(--mono);font-size:11.5px;padding:16px 4px}
+  .turnaround{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel2);border:1px solid var(--line);
+    border-radius:12px;padding:14px;margin-top:14px}
+  .turnaround .t{font-family:var(--mono);font-size:26px;font-variant-numeric:tabular-nums}
+  .note{color:var(--dim2);font-size:11.5px;font-family:var(--mono);margin-top:12px;line-height:1.6}
+  .warnline{display:none;color:#ffd9a0;background:#2a1e0a;border:1px solid #5a4420;border-radius:8px;
+    padding:7px 10px;font-size:11px;font-family:var(--mono);margin-top:8px}
+  .warnline.on{display:block}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001s!important;transition-duration:.001s!important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">✈</div>
+      <div><b>SKYFOCUS</b><small>FOCUS FLIGHT TIMER</small></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="chip" id="clockChip">--:--:--</div>
+    <div class="chip" id="statusChip">ON GROUND</div>
+    <button class="ghost" id="soundBtn" title="Landing chime">🔔 SOUND</button>
+  </header>
+
+  <!-- ============ SCREEN 1: DEPARTURES BOARD ============ -->
+  <section class="screen active" id="screen-board">
+    <div class="cols">
+      <div class="panel">
+        <h2>DEPARTURE BOARD</h2>
+        <p class="sub">Pick a leg from your current location. Real flying time is compressed into a focus session.</p>
+        <div class="originbox">
+          <label class="originmeta" for="originSel">FROM</label>
+          <select id="originSel"></select>
+          <span class="originmeta" id="originMeta"></span>
+        </div>
+        <div class="dlist" id="dlist" style="margin-top:14px"></div>
+      </div>
+
+      <div class="panel">
+        <h2>HOW IT WORKS</h2>
+        <p class="sub">A flight-shaped Pomodoro.</p>
+        <div class="kv"><label>COMPRESSION</label><div class="v">1 focus min = <b id="compLabel">15</b> min airborne</div></div>
+        <div class="kv" style="margin-top:10px"><label>THE FLIGHT</label>
+          <div class="v" id="howFlight">Take off, cruise, descend — the clock only counts down while airborne.</div></div>
+        <div class="kv" style="margin-top:10px"><label>CONTROLS</label>
+          <div class="v">Pause (space) · +5 min delay (D) · reset (R) · divert early (Esc)</div></div>
+        <div class="note" id="boardNote">Tip: pick a shorter leg when you are low on fuel.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 2: BOARDING PASS ============ -->
+  <section class="screen" id="screen-pass">
+    <div class="passwrap">
+      <div>
+        <div class="pass">
+          <div class="main">
+            <div class="carrier">
+              <span>FOCUS AIRWAYS · <span id="p_class">FOCUS CLASS</span></span>
+              <span id="p_flight">FX0000</span>
+            </div>
+            <div class="route">
+              <div><div class="code" id="p_from">SZX</div></div>
+              <div class="arrow"><span class="planeico">✈</span> <small id="p_lapse">TIME-LAPSE ×15</small></div>
+              <div style="text-align:right"><div class="code" id="p_to">NRT</div></div>
+            </div>
+            <div class="cityline"><span id="p_fromCity">Shenzhen</span><span id="p_toCity">Tokyo</span></div>
+
+            <div class="fields">
+              <div class="f"><label>PASSENGER</label>
+                <input class="nameinput" id="p_name" value="FOCUS TRAVELLER" spellcheck="false">
+                <div class="warnline" id="nameWarn">Name is blank — the pass will read FOCUS TRAVELLER.</div>
+              </div>
+              <div class="f"><label>FOCUS TIME</label><div class="v big" id="p_focus">25 min</div></div>
+              <div class="f"><label>DEPARTS / ARRIVES</label><div class="v" id="p_times">21:05 → 21:30</div></div>
+              <div class="f"><label>REAL FLIGHT TIME</label><div class="v" id="p_real">4h15m · 2,940 km</div></div>
+            </div>
+
+            <div class="lapse">
+              <span>⏱</span><span id="p_lapseNote">Real routing compressed ×15 — <b>25 min</b> of focus covers a <b>4h15m</b> flight.</span>
+            </div>
+            <div class="barcode" id="barcode"></div>
+          </div>
+          <div class="stub">
+            <div class="klabel">GATE</div><div class="kval" id="p_gate">A12</div>
+            <div class="klabel">SEAT</div><div class="kval" id="p_seat">14C</div>
+            <div class="klabel">BOARDING</div><div class="kval" id="p_board">20:50</div>
+            <div class="klabel">BAGGAGE</div><div class="kval">1 × DEEP WORK</div>
+            <div class="klabel">FOCUS MIN</div><div class="code-big" id="p_focus2">25</div>
+            <div class="klabel" id="p_ratioLabel">TIME-LAPSE ×15</div>
+            <div class="vseats">FOCUS AIRWAYS</div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:18px">
+          <button class="primary" id="beginBtn">▶ BEGIN BOARDING</button>
+          <button class="ghost" id="presetBtn">FOCUS TIME: −5</button>
+          <button class="ghost" id="presetAdd">+5</button>
+          <button class="ghost" id="backBtn">◀ CHANGE DESTINATION</button>
+        </div>
+        <div class="note">Focus time follows the leg by default (base compression ×<span id="compLabel2">15</span>) — the ratio printed on the pass is this leg’s exact one. Adjust the time here for a custom session; the plane still flies the same route.</div>
+      </div>
+
+      <div class="panel">
+        <h2>PRE-FLIGHT</h2>
+        <p class="sub">Cabin crew is boarding.</p>
+        <div class="kv"><label>DISTANCE</label><div class="v" id="p_km">2,940 km</div></div>
+        <div class="kv" style="margin-top:10px"><label>CRUISE SPEED (SIM)</label><div class="v">870 km/h</div></div>
+        <div class="kv" style="margin-top:10px"><label>CABIN</label><div class="v">Quiet · notifications off</div></div>
+        <div class="note">Pause anytime — the flight holds in the air. Land early with +5 min delay if you need a few more minutes.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 3: IN FLIGHT ============ -->
+  <section class="screen" id="screen-flight">
+    <div class="flightgrid">
+      <div class="windowpane">
+        <div class="glass">
+          <canvas id="sky"></canvas>
+          <div class="badge" id="phaseBadge">TAXI</div>
+          <div class="badge right" id="altBadge">0 ft</div>
+        </div>
+      </div>
+      <div class="hud">
+        <div class="remain"><small>TIME TO DESTINATION</small><span id="remainTxt">00:25:00</span></div>
+        <div class="route" id="routeTxt">SZX → NRT · <b>Focus Airways FX0000</b></div>
+        <div class="hudrow">
+          <div class="kv"><label>ELAPSED</label><div class="v" id="elapsedTxt">00:00:00</div></div>
+          <div class="kv"><label>STATUS</label><div class="v" id="runTxt">FLYING</div></div>
+          <div class="kv"><label>GROUND SPEED</label><div class="v" id="spdTxt">0 km/h</div></div>
+          <div class="kv"><label>DISTANCE LEFT</label><div class="v" id="distTxt">2,940 km</div></div>
+          <div class="kv"><label>ALTITUDE</label><div class="v" id="altTxt">0 ft</div></div>
+          <div class="kv"><label>ETA (FOCUS CLOCK)</label><div class="v" id="etaTxt">--:--</div></div>
+        </div>
+        <div class="row">
+          <button class="primary" id="pauseBtn">⏸ PAUSE</button>
+          <button id="delayBtn">+5 MIN DELAY</button>
+          <button class="ghost" id="resetBtn">↺ RESET FLIGHT</button>
+          <button class="danger" id="divertBtn">✕ DIVERT EARLY</button>
+        </div>
+        <div class="note" id="flightNote">Real leg: 4h15m compressed into 25 min of focus.</div>
+      </div>
+    </div>
+
+    <div class="ribbon">
+      <div class="ends"><span><b id="ribFrom">SZX</b> Shenzhen</span><span id="ribPct">0%</span><span style="text-align:right">Tokyo <b id="ribTo">NRT</b></span></div>
+      <div class="track">
+        <div class="fill" id="ribFill"></div>
+        <div class="plane" id="ribPlane">✈</div>
+      </div>
+      <div class="ribbonticks"><span>TAXI</span><span>CLIMB</span><span>CRUISE</span><span>DESCENT</span><span>LANDING</span></div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 4: LANDED / LOGBOOK ============ -->
+  <section class="screen" id="screen-landed">
+    <div class="landed">
+      <div class="panel">
+        <h2>ARRIVALS</h2>
+        <p class="sub" id="landedSub">Flight complete.</p>
+        <div style="margin:8px 0 16px"><span class="stamp" id="stamp">LANDED</span></div>
+        <div class="kv"><label>FLIGHT</label><div class="v" id="l_flight">FX0000</div></div>
+        <div class="kv" style="margin-top:10px"><label>ROUTE</label><div class="v" id="l_route">SZX → NRT</div></div>
+        <div class="kv" style="margin-top:10px"><label>FOCUS LOGGED</label><div class="v" id="l_focus">25 min</div></div>
+        <div class="kv" style="margin-top:10px"><label>REAL EQUIVALENT</label><div class="v" id="l_real">4h15m · 2,940 km</div></div>
+
+        <div class="turnaround">
+          <div><label class="klabel" style="font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:var(--dim2)">TURNAROUND BREAK</label>
+            <div class="t" id="breakTxt">05:00</div></div>
+          <button id="breakBtn" class="primary">☕ START BREAK</button>
+          <button class="ghost" id="skipBreakBtn">SKIP</button>
+        </div>
+
+        <div class="row" style="margin-top:16px">
+          <button class="primary" id="nextBtn">✈ BOOK NEXT FLIGHT</button>
+          <button class="ghost" id="repeatBtn">↻ REPEAT THIS ROUTE</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>FLIGHT LOGBOOK</h2>
+        <p class="sub">Every completed and diverted leg, stored locally on this machine.</p>
+        <div id="logWrap"></div>
+        <div class="row" style="margin-top:14px">
+          <button class="ghost" id="clearLogBtn">CLEAR LOGBOOK</button>
+        </div>
+        <div class="note" id="totalNote">Total focus time logged: 0 min.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+"use strict";
+const VERSION = "skyfocus-proto-1";
+window.onerror = function(m,s,l,c,e){ (window.__errs = window.__errs || []).push(String(m)+" @"+l+":"+c); };
+
+/* ============================================================
+   DATA — airports and typical (real) flight times
+   Distances are computed, never typed: haversine on lat/lon.
+   ============================================================ */
+const COMPRESSION = 15;                       // 1 focus minute = 15 airborne minutes
+const AIRPORTS = {
+  SZX:{code:"SZX", city:"Shenzhen",   airport:"Bao'an Intl",     lat:22.639, lon:113.811},
+  HKG:{code:"HKG", city:"Hong Kong",  airport:"Chek Lap Kok",    lat:22.308, lon:113.918},
+  CAN:{code:"CAN", city:"Guangzhou",  airport:"Baiyun Intl",     lat:23.392, lon:113.299},
+  HAN:{code:"HAN", city:"Hanoi",      airport:"Noi Bai",         lat:21.221, lon:105.807},
+  SIN:{code:"SIN", city:"Singapore",  airport:"Changi",          lat: 1.359, lon:103.989},
+  NRT:{code:"NRT", city:"Tokyo",      airport:"Narita",          lat:35.772, lon:140.393},
+  HND:{code:"HND", city:"Tokyo",      airport:"Haneda",          lat:35.549, lon:139.780},
+  TPE:{code:"TPE", city:"Taipei",     airport:"Taoyuan",         lat:25.077, lon:121.232},
+  BKK:{code:"BKK", city:"Bangkok",    airport:"Suvarnabhumi",    lat:13.690, lon:100.750},
+  MNL:{code:"MNL", city:"Manila",     airport:"Ninoy Aquino",    lat:14.508, lon:121.020},
+  ICN:{code:"ICN", city:"Seoul",      airport:"Incheon",         lat:37.469, lon:126.451},
+  KUL:{code:"KUL", city:"Kuala Lumpur",airport:"Sepang",         lat: 2.745, lon:101.710},
+  DPS:{code:"DPS", city:"Denpasar",   airport:"Ngurah Rai",      lat:-8.748, lon:115.167},
+  DXB:{code:"DXB", city:"Dubai",      airport:"Al Maktoum Intl", lat:25.253, lon: 55.365},
+  SYD:{code:"SYD", city:"Sydney",     airport:"Kingsford Smith", lat:-33.939,lon:151.175},
+  AKL:{code:"AKL", city:"Auckland",   airport:"Auckland Intl",   lat:-37.008,lon:174.792},
+  LHR:{code:"LHR", city:"London",     airport:"Heathrow",        lat:51.470, lon:-0.454},
+  CDG:{code:"CDG", city:"Paris",      airport:"Charles de Gaulle",lat:49.010,lon: 2.548},
+  YVR:{code:"YVR", city:"Vancouver",  airport:"YVR Intl",        lat:49.196, lon:-123.18},
+  LAX:{code:"LAX", city:"Los Angeles",airport:"LAX Intl",        lat:33.941, lon:-118.41},
+  JFK:{code:"JFK", city:"New York",   airport:"John F. Kennedy", lat:40.641, lon:-73.778},
+  SFO:{code:"SFO", city:"San Francisco",airport:"SFO Intl",      lat:37.621, lon:-122.38}
+};
+// Typical block times in minutes (airline schedule ballpark, not exact day-of ops).
+const ROUTES = {
+  SZX:[["HAN",125],["SIN",230],["NRT",255],["TPE",115],["BKK",180],["DPS",315],["DXB",500],["SYD",570],["LHR",770],["JFK",920]],
+  HKG:[["TPE",110],["BKK",180],["HND",245],["SIN",235],["DXB",485],["SYD",560],["LHR",760],["LAX",765],["SFO",740]],
+  CAN:[["MNL",175],["ICN",210],["KUL",240],["DPS",320],["CDG",750],["AKL",680],["YVR",710]]
+};
+const ORIGIN_ORDER = ["SZX","HKG","CAN"];
+
+function haversineKm(a,b){
+  const R=6371, r=Math.PI/180;
+  const dLat=(b.lat-a.lat)*r, dLon=(b.lon-a.lon)*r;
+  const s=Math.sin(dLat/2)**2 + Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLon/2)**2;
+  return Math.round(2*R*Math.asin(Math.min(1,Math.sqrt(s))));
+}
+function focusMinutesFor(realMin){
+  const raw = realMin/COMPRESSION;
+  return Math.max(10, Math.min(60, Math.round(raw/5)*5));
+}
+function legFrom(origin, code, realMin){
+  const o=AIRPORTS[origin], d=AIRPORTS[code];
+  return {origin:o, dest:d, realMin:realMin, km:haversineKm(o,d), focusMin:focusMinutesFor(realMin)};
+}
+function routesFor(origin){
+  return ROUTES[origin].map(function(p){ return legFrom(origin, p[0], p[1]); });
+}
+function hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619);} return Math.abs(h); }
+function fmtClock(d){ return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function fmtHMin(min){ const h=Math.floor(min/60), m=min%60; return h>0 ? h+"h"+String(m).padStart(2,"0")+"m" : m+"m"; }
+function fmtDur(sec){ sec=Math.max(0,Math.round(sec)); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60;
+  return (h>0? String(h).padStart(2,"0")+":":"")+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0"); }
+function fmtNum(n){ return n.toLocaleString("en-US"); }
+
+/* ============================================================
+   TIMERS — wall-clock based, so a throttled tab cannot lose time
+   ============================================================ */
+function mkTimer(){ return {total:0, base:0, running:false, runFrom:0}; }
+function tElapsed(t){ return t.running ? t.base + (Date.now()-t.runFrom)/1000 : t.base; }
+function tStart(t){ if(t.running) return; t.runFrom=Date.now(); t.running=true; }
+function tPause(t){ if(!t.running) return; t.base = Math.min(t.total, tElapsed(t)); t.running=false; }
+function tReset(t,total){ if(total!=null) t.total=total; t.base=0; t.running=false; t.runFrom=0; }
+function tAdd(t,sec){ t.total = Math.max(60, t.total+sec); }
+function tAdvance(t,sec){                    // test/debug hook only
+  if(t.running){ t.runFrom -= sec*1000; } else { t.base = Math.min(t.total, t.base+sec); }
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const LS_KEY="skyfocus.log.v1";
+const state = {
+  screen:"board", origin:"SZX", leg:null, focusMin:0,
+  focus:mkTimer(), brk:mkTimer(),
+  sound:true, name:"FOCUS TRAVELLER", log:[],
+  flightNo:"FX0000", gate:"A12", seat:"14C",
+  cloudT:0, lastNow:performance.now(), dt:0, alert:0
+};
+const REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+function load(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);
+    if(raw) state.log=JSON.parse(raw)||[];
+    const n=localStorage.getItem(LS_KEY+".name"); if(n) state.name=n;
+    const s=localStorage.getItem(LS_KEY+".sound"); if(s!=null) state.sound = s==="1";
+  }catch(e){ /* file:// may block storage — prototype still runs */ }
+}
+function save(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify(state.log));
+    localStorage.setItem(LS_KEY+".name", state.name);
+    localStorage.setItem(LS_KEY+".sound", state.sound?"1":"0");
+  }catch(e){}
+}
+const $ = function(id){ return document.getElementById(id); };
+
+/* ============================================================
+   SCREEN 1 — departure board
+   ============================================================ */
+function buildOriginSelect(){
+  const sel=$("originSel"); sel.innerHTML="";
+  ORIGIN_ORDER.forEach(function(c){
+    const a=AIRPORTS[c], o=document.createElement("option");
+    o.value=c; o.textContent=c+" · "+a.city;
+    sel.appendChild(o);
+  });
+  sel.value=state.origin;
+  sel.addEventListener("change", function(){ state.origin=sel.value; state.leg=null; renderBoard(); });
+}
+function renderBoard(){
+  const meta=$("originMeta"); const a=AIRPORTS[state.origin];
+  meta.textContent = (a.airport? a.airport+" · ":"") + a.lat.toFixed(2)+"°, "+a.lon.toFixed(2)+"°  ·  "+fmtClock(new Date())+" local";
+  const list=$("dlist"); list.innerHTML="";
+  routesFor(state.origin).forEach(function(leg){
+    const b=document.createElement("button");
+    b.className="drow"; b.setAttribute("data-code", leg.dest.code);
+    b.innerHTML =
+      '<span class="code">'+leg.dest.code+'<small>'+leg.dest.city.toUpperCase()+'</small></span>'+
+      '<span class="city">'+leg.dest.airport+'<em>'+fmtNum(leg.km)+' km straight-line</em></span>'+
+      '<span class="real"><b>'+fmtHMin(leg.realMin)+'</b>real flight</span>'+
+      '<span class="focuspill">'+leg.focusMin+' min<span>FOCUS</span></span>';
+    b.addEventListener("click", function(){ selectLeg(leg); });
+    list.appendChild(b);
+  });
+  $("compLabel").textContent = COMPRESSION;
+  $("boardNote").textContent = "Compression ×"+COMPRESSION+" — a 4-hour leg becomes about a 16-minute focus block.";
+}
+
+/* ============================================================
+   SCREEN 2 — boarding pass
+   ============================================================ */
+function selectLeg(leg){
+  state.leg=leg; state.focusMin=leg.focusMin;
+  const h=hash(leg.origin.code+leg.dest.code+String(new Date().getDate()));
+  state.flightNo="FX"+String(1000+(h%8999));
+  state.gate=String.fromCharCode(65+(h%6))+String(1+(h%36));
+  state.seat=String(1+(h%30))+String.fromCharCode(65+(h%6));
+  renderPass();
+  show("pass");
+}
+function renderPass(){
+  const leg=state.leg; if(!leg) return;
+  $("p_from").textContent=leg.origin.code; $("p_to").textContent=leg.dest.code;
+  $("p_fromCity").textContent=leg.origin.city; $("p_toCity").textContent=leg.dest.city;
+  $("p_flight").textContent=state.flightNo;
+  $("p_gate").textContent=state.gate; $("p_seat").textContent=state.seat;
+  $("p_km").textContent=fmtNum(leg.km)+" km";
+  $("p_real").textContent=fmtHMin(leg.realMin)+" · "+fmtNum(leg.km)+" km";
+  $("p_name").value=state.name;
+  $("routeTxt").innerHTML = leg.origin.code+" → "+leg.dest.code+" · <b>Focus Airways "+state.flightNo+"</b>";
+  updatePassFocus();
+  const now=new Date(), arr=new Date(Date.now()+state.focusMin*60000);
+  $("p_times").textContent=fmtClock(now)+" → "+fmtClock(arr);
+  $("p_board").textContent=fmtClock(new Date(Date.now()-15*60000));
+  buildBarcode();
+  validateName(false);
+}
+function updatePassFocus(){
+  const leg=state.leg; const f=state.focusMin;
+  const ratio=Math.max(1,Math.round(leg.realMin/f));
+  $("p_focus").textContent=f+" min";
+  $("p_focus2").textContent=String(f);
+  $("p_lapse").textContent="TIME-LAPSE ×"+ratio;
+  $("p_ratioLabel").textContent="TIME-LAPSE ×"+ratio;
+  $("p_lapseNote").innerHTML="Real routing compressed ×"+ratio+" — <b>"+f+" min</b> of focus covers a <b>"+fmtHMin(leg.realMin)+"</b> flight.";
+  $("compLabel2").textContent=COMPRESSION;
+}
+function buildBarcode(){
+  const el=$("barcode"); el.innerHTML="";
+  const seed=state.flightNo+"|"+state.leg.origin.code+state.leg.dest.code+"|"+new Date().toDateString();
+  let h=hash(seed);
+  for(let i=0;i<58;i++){
+    h=(h*1664525+1013904223)%4294967296;
+    const w=[1,1,2,3][h%4], gap=h%2===0?"2px":"4px";
+    const bar=document.createElement("i");
+    bar.style.width=w+"px"; bar.style.flex="0 0 "+w+"px"; bar.style.marginRight=gap;
+    bar.style.opacity = (h%7===0)? "0.62" : "1";
+    el.appendChild(bar);
+  }
+}
+function validateName(showAlways){
+  const input=$("p_name"), warn=$("nameWarn");
+  const v=input.value.trim();
+  const blank = v.length===0;
+  warn.classList.toggle("on", blank && (showAlways || input.value.length===0));
+  input.style.borderBottomColor = blank? "#d08a4a" : "#a39b88";
+  return !blank;
+}
+function commitName(){
+  const v=$("p_name").value.trim();
+  state.name = v.length? v : "FOCUS TRAVELLER";
+  save();
+}
+$("p_name").addEventListener("input", function(){ validateName(true); });
+$("p_name").addEventListener("blur", function(){ commitName(); $("p_name").value=state.name; validateName(false); });
+
+/* ============================================================
+   SCREEN 3 — flight
+   ============================================================ */
+function beginBoarding(){
+  commitName();
+  const leg=state.leg; if(!leg) return;
+  tReset(state.focus, state.focusMin*60);
+  tStart(state.focus);
+  state.screen="flight";
+  show("flight");
+  prepareSky();
+  ding(880,0.05);
+  updateFlight(true);
+}
+function flightProgress(){
+  if(!state.focus.total) return 0;
+  return Math.max(0, Math.min(1, tElapsed(state.focus)/state.focus.total));
+}
+const PHASES=[
+  {t:0.00,name:"TAXI",    alt:0,     spd:25 },
+  {t:0.03,name:"TAKEOFF", alt:0,     spd:250},
+  {t:0.06,name:"CLIMB",   alt:0,     spd:520},
+  {t:0.15,name:"CRUISE",  alt:38000, spd:870},
+  {t:0.84,name:"CRUISE",  alt:38000, spd:870},
+  {t:0.93,name:"DESCENT", alt:9000,  spd:600},
+  {t:0.98,name:"APPROACH",alt:1200,  spd:260},
+  {t:1.00,name:"LANDING", alt:0,     spd:60 }
+];
+function phaseAt(p){
+  let a=PHASES[0], b=PHASES[PHASES.length-1];
+  for(let i=0;i<PHASES.length-1;i++){ if(p>=PHASES[i].t && p<=PHASES[i+1].t){ a=PHASES[i]; b=PHASES[i+1]; break; } }
+  const span=(b.t-a.t)||1, u=Math.max(0,Math.min(1,(p-a.t)/span));
+  const ease = u*u*(3-2*u);
+  return { name: u<0.5? a.name : b.name, alt: a.alt+(b.alt-a.alt)*ease, spd: a.spd+(b.spd-a.spd)*ease };
+}
+function updateFlight(hard){
+  const leg=state.leg; if(!leg) return;
+  const p=flightProgress(), ph=phaseAt(p);
+  const remain=Math.max(0, state.focus.total - tElapsed(state.focus));
+  const el=tElapsed(state.focus);
+  $("remainTxt").textContent=fmtDur(remain);
+  $("elapsedTxt").textContent=fmtDur(el);
+  $("runTxt").textContent = state.focus.running ? "FLYING" : (el>0? "HOLDING" : "ON GROUND");
+  $("spdTxt").textContent=Math.round(ph.spd)+" km/h";
+  $("distTxt").textContent=fmtNum(Math.round(leg.km*(1-p)))+" km";
+  $("altTxt").textContent=fmtNum(Math.round(ph.alt))+" ft";
+  const eta=new Date(Date.now()+remain*1000);
+  $("etaTxt").textContent=fmtClock(eta);
+  $("phaseBadge").textContent = state.focus.running? ph.name : "HOLDING";
+  $("altBadge").textContent=fmtNum(Math.round(ph.alt))+" ft";
+  $("ribFill").style.width=(p*100).toFixed(2)+"%";
+  $("ribPlane").style.left=(p*100).toFixed(2)+"%";
+  $("ribPct").textContent=Math.round(p*100)+"%";
+  $("flightNote").textContent="Real leg "+fmtHMin(leg.realMin)+" compressed into "+state.focusMin+" min of focus · "+fmtNum(leg.km)+" km to run.";
+  document.title = state.focus.running ? fmtDur(remain)+" → "+leg.dest.code+" · SKYFOCUS" : "SKYFOCUS — focus flight timer";
+  const chip=$("statusChip");
+  chip.textContent = state.focus.running? ("AIRBORNE "+leg.origin.code+"→"+leg.dest.code) : "HOLDING";
+  chip.className = "chip "+(state.focus.running?"live":"");
+  if(hard) $("pauseBtn").textContent = state.focus.running? "⏸ PAUSE" : "▶ RESUME";
+}
+$("pauseBtn").addEventListener("click", togglePause);
+function togglePause(){
+  if(state.screen!=="flight") return;
+  if(state.focus.running){ tPause(state.focus); } else { if(tElapsed(state.focus) < state.focus.total) tStart(state.focus); }
+  updateFlight(true);
+}
+$("delayBtn").addEventListener("click", function(){
+  if(state.screen!=="flight") return;
+  tAdd(state.focus, 300); state.alert=1; updateFlight(true);
+});
+$("resetBtn").addEventListener("click", function(){
+  if(state.screen!=="flight") return;
+  tReset(state.focus, state.focusMin*60); tStart(state.focus); updateFlight(true);
+});
+$("divertBtn").addEventListener("click", function(){
+  if(state.screen!=="flight") return;
+  divert();
+});
+function divert(){
+  const el=tElapsed(state.focus);
+  const logged=Math.max(0, Math.round(el/60));
+  const pFlown=state.focus.total? Math.min(1, el/state.focus.total) : 0;
+  tPause(state.focus);
+  addLog("DIVERTED", logged, Math.round(state.leg.km*pFlown));
+  land(false);
+}
+function land(completed){
+  if(completed===undefined) completed = tElapsed(state.focus) >= state.focus.total-0.5;
+  const el=Math.min(tElapsed(state.focus), state.focus.total);
+  tPause(state.focus);
+  if(completed){
+    addLog("LANDED", state.focusMin, state.leg.km);
+    chime();
+    tReset(state.brk, 300);
+  }
+  state.screen="landed";
+  show("landed");
+  $("landedSub").textContent = completed
+    ? "Flight complete. Gate-to-gate focus: "+state.focusMin+" min."
+    : "Diverted. You still logged "+Math.max(0,Math.round(el/60))+" min.";
+  const st=$("stamp");
+  st.textContent = completed? "LANDED" : "DIVERTED";
+  st.classList.toggle("diverted", !completed);
+  st.classList.remove("show");
+  // fade the stamp in numerically, so the transition is real and sampleable
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ st.classList.add("show"); }); });
+  $("l_flight").textContent=state.flightNo;
+  $("l_route").textContent=state.leg.origin.code+" → "+state.leg.dest.code+"  ("+state.leg.origin.city+" → "+state.leg.dest.city+")";
+  const lg=state.log[state.log.length-1];
+  $("l_focus").textContent=(lg? lg.min : 0)+" min";
+  $("l_real").textContent=fmtHMin(state.leg.realMin)+" · "+fmtNum(state.leg.km)+" km";
+  $("breakTxt").textContent="05:00";
+  $("breakBtn").textContent="☕ START BREAK";
+  $("statusChip").textContent = completed? "ARRIVED "+state.leg.dest.code : "DIVERTED";
+  $("statusChip").className="chip "+(completed?"ok":"live");
+  document.title="SKYFOCUS — focus flight timer";
+  renderLog();
+}
+
+/* ============================================================
+   Logbook + turnaround
+   ============================================================ */
+function addLog(status, min, kmFlown){
+  state.log.push({flight:state.flightNo, from:state.leg.origin.code, to:state.leg.dest.code,
+    min:min, km:kmFlown, realMin:state.leg.realMin, status:status,
+    at:new Date().toISOString(), plan:state.focusMin});
+  save();
+}
+function renderLog(){
+  const w=$("logWrap");
+  if(!state.log.length){ w.innerHTML='<div class="empty">No flights logged yet. Every landed or diverted leg appears here.</div>'; }
+  else{
+    let rows="";
+    for(let i=state.log.length-1;i>=0;i--){
+      const e=state.log[i];
+      const d=new Date(e.at);
+      rows+="<tr><td>"+e.flight+"</td><td>"+e.from+"→"+e.to+"</td><td>"+e.min+" min</td><td class='dim'>"+
+        fmtNum(e.km)+" km</td><td><span class='tag "+(e.status==="LANDED"?"":"warn")+"'>"+e.status+"</span></td><td class='dim'>"+
+        (d.getMonth()+1)+"/"+d.getDate()+" "+fmtClock(d)+"</td></tr>";
+    }
+    w.innerHTML='<table class="logtable"><thead><tr><th>FLIGHT</th><th>ROUTE</th><th>FOCUS</th><th>DIST</th><th>STATUS</th><th>LOGGED</th></tr></thead><tbody>'+rows+"</tbody></table>";
+  }
+  let total=0; state.log.forEach(function(e){ total+=e.min; });
+  const km=state.log.reduce(function(a,e){ return a+e.km; },0);
+  $("totalNote").textContent = "Total focus time logged: "+total+" min  ·  virtual distance flown: "+fmtNum(km)+" km  ·  "+state.log.length+" flight(s).";
+}
+$("breakBtn").addEventListener("click", function(){
+  if(state.brk.running){ tPause(state.brk); $("breakBtn").textContent="▶ RESUME BREAK"; }
+  else { tStart(state.brk); $("breakBtn").textContent="⏸ PAUSE BREAK"; }
+});
+$("skipBreakBtn").addEventListener("click", function(){ tReset(state.brk,300); $("breakTxt").textContent="05:00"; $("breakBtn").textContent="☕ START BREAK"; });
+$("nextBtn").addEventListener("click", function(){ state.leg=null; renderBoard(); show("board"); });
+$("repeatBtn").addEventListener("click", function(){ selectLeg(state.leg); });
+$("clearLogBtn").addEventListener("click", function(){ state.log=[]; save(); renderLog(); });
+
+/* ============================================================
+   Navigation + chrome
+   ============================================================ */
+function show(name){
+  state.screen=name;
+  ["board","pass","flight","landed"].forEach(function(s){
+    document.getElementById("screen-"+s).classList.toggle("active", s===name);
+  });
+  if(name==="board"){ $("statusChip").textContent="ON GROUND"; $("statusChip").className="chip"; renderBoard(); }
+  if(name==="landed") renderLog();
+}
+$("beginBtn").addEventListener("click", beginBoarding);
+$("backBtn").addEventListener("click", function(){ show("board"); });
+$("presetBtn").addEventListener("click", function(){ state.focusMin=Math.max(5,state.focusMin-5); updatePassFocus(); });
+$("presetAdd").addEventListener("click", function(){ state.focusMin=Math.min(180,state.focusMin+5); updatePassFocus(); });
+$("soundBtn").addEventListener("click", function(){
+  state.sound=!state.sound; save(); paintSound();
+});
+function paintSound(){ $("soundBtn").textContent = state.sound? "🔔 SOUND ON" : "🔕 MUTED"; }
+
+function tickClock(){ $("clockChip").textContent=fmtClock(new Date())+":"+String(new Date().getSeconds()).padStart(2,"0"); }
+setInterval(tickClock,1000); tickClock();
+
+/* ---------- audio (WebAudio, no assets) ---------- */
+let AC=null;
+function ac(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; } } return AC; }
+function tone(freq, dur, delay, gain){
+  const a=ac(); if(!a||!state.sound) return;
+  const o=a.createOscillator(), g=a.createGain();
+  o.type="sine"; o.frequency.value=freq;
+  const t0=a.currentTime+(delay||0);
+  g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(gain||0.16,t0+0.03);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0+dur+0.05);
+}
+function ding(f,d){ tone(f||880, d||0.4, 0, 0.13); }
+function chime(){ tone(784,0.5,0,0.16); tone(1046,0.7,0.18,0.14); }
+
+/* ============================================================
+   CANVAS — the cabin window
+   ============================================================ */
+const sky=$("sky"), sctx=sky.getContext("2d");
+let SW=0, SH=0, clouds=[], stars=[], cloudSprite=null;
+// One pre-blurred cloud sprite, drawn per cloud — cheap, and no ring artifacts.
+function buildCloudSprite(){
+  const c=document.createElement("canvas"); c.width=340; c.height=190;
+  const x=c.getContext("2d");
+  if("filter" in x) x.filter="blur(24px)";
+  // wide, low cluster: reads as a stratus/cumulus band rather than a ball
+  const puffs=[[70,118,34],[104,104,44],[150,96,54],[198,100,50],[238,110,42],
+               [128,126,40],[180,126,38],[262,124,30],[52,128,26]];
+  x.fillStyle="rgba(255,255,255,0.9)";
+  puffs.forEach(function(q){ x.beginPath(); x.arc(q[0],q[1],q[2],0,Math.PI*2); x.fill(); });
+  cloudSprite=c;
+}
+buildCloudSprite();
+
+const SKYKEYS=[
+  {t:0.00, top:"#0a1024", mid:"#2a3f6b", bot:"#c98b5a"},
+  {t:0.18, top:"#1a5aa0", mid:"#6fb0e0", bot:"#cfe3ef"},
+  {t:0.50, top:"#1a63ad", mid:"#5ea8e0", bot:"#bcd8ea"},
+  {t:0.78, top:"#123a6b", mid:"#5d6ea8", bot:"#f0a35e"},
+  {t:1.00, top:"#050a18", mid:"#0d1730", bot:"#1b2742"}
+];
+function hex2rgb(h){ h=h.replace("#",""); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+function mix(a,b,u){ const A=hex2rgb(a),B=hex2rgb(b); return "rgb("+Math.round(A[0]+(B[0]-A[0])*u)+","+Math.round(A[1]+(B[1]-A[1])*u)+","+Math.round(A[2]+(B[2]-A[2])*u)+")"; }
+function palette(p){
+  let a=SKYKEYS[0], b=SKYKEYS[SKYKEYS.length-1];
+  for(let i=0;i<SKYKEYS.length-1;i++){ if(p>=SKYKEYS[i].t && p<=SKYKEYS[i+1].t){ a=SKYKEYS[i]; b=SKYKEYS[i+1]; break; } }
+  const u=(p-a.t)/((b.t-a.t)||1);
+  return {top:mix(a.top,b.top,u), mid:mix(a.mid,b.mid,u), bot:mix(a.bot,b.bot,u)};
+}
+function prepareSky(){
+  sizeSky();
+  clouds=[]; stars=[];
+  for(let i=0;i<26;i++){
+    const layer=i%3;
+    clouds.push({x:Math.random()*SW*1.6-SW*0.3, y:SH*(0.34+Math.random()*0.5),
+      s:20+layer*26+Math.random()*30, a:0.12+ (2-layer)*0.09, v:8+layer*13+Math.random()*6, puff:6+((i*7)%6)});
+  }
+  for(let i=0;i<90;i++) stars.push({x:Math.random(), y:Math.random()*0.55, r:Math.random()*1.4+0.3, a:Math.random()});
+  drawSky(0);
+}
+function sizeSky(){
+  const r=sky.getBoundingClientRect();
+  const dpr=Math.min(2, window.devicePixelRatio||1);
+  SW=Math.max(240, Math.round(r.width)); SH=Math.max(160, Math.round(r.height));
+  sky.width=Math.round(SW*dpr); sky.height=Math.round(SH*dpr);
+  sctx.setTransform(dpr,0,0,dpr,0,0);
+}
+if(window.ResizeObserver){ new ResizeObserver(function(){ if(SW){ sizeSky(); } }).observe(sky.parentElement); }
+else window.addEventListener("resize", sizeSky);
+
+function drawSky(dt){
+  if(!SW) sizeSky();
+  const p=flightProgress(), ph=phaseAt(p), pal=palette(p);
+  const inFlight = state.screen==="flight";
+  const alt = inFlight? ph.alt : 0;
+
+  const g=sctx.createLinearGradient(0,0,0,SH);
+  g.addColorStop(0,pal.top); g.addColorStop(0.52,pal.mid); g.addColorStop(1,pal.bot);
+  sctx.fillStyle=g; sctx.fillRect(0,0,SW,SH);
+
+  // stars: fade numerically, bright at pre-dawn and night
+  const starP = Math.max(0, Math.min(1, Math.max((0.10-p)/0.10, (p-0.86)/0.14)));
+  if(starP>0.004){
+    stars.forEach(function(s){
+      sctx.globalAlpha = starP*s.a*0.9;
+      sctx.fillStyle="#ffffff";
+      sctx.beginPath(); sctx.arc(s.x*SW, s.y*SH, s.r, 0, Math.PI*2); sctx.fill();
+    });
+    sctx.globalAlpha=1;
+  }
+
+  // sun / moon arc
+  const sunU = Math.max(0,Math.min(1,(p-0.02)/0.80));
+  if(p<0.86){
+    const sx = -0.1*SW + sunU*1.2*SW;
+    const sy = SH*0.86 - Math.sin(Math.PI*sunU)*SH*0.62;
+    const rg=sctx.createRadialGradient(sx,sy,2,sx,sy,SH*0.27);
+    rg.addColorStop(0,"rgba(255,238,190,0.85)"); rg.addColorStop(0.16,"rgba(255,214,140,0.42)");
+    rg.addColorStop(1,"rgba(255,200,120,0)");
+    sctx.fillStyle=rg; sctx.beginPath(); sctx.arc(sx,sy,SH*0.27,0,Math.PI*2); sctx.fill();
+    sctx.fillStyle="rgba(255,250,225,0.95)"; sctx.beginPath(); sctx.arc(sx,sy,Math.max(7,SH*0.035),0,Math.PI*2); sctx.fill();
+  } else {
+    const u=(p-0.86)/0.14;
+    const mx=0.15*SW+u*0.7*SW, my=SH*0.30-u*SH*0.12;
+    const rg=sctx.createRadialGradient(mx,my,2,mx,my,SH*0.28);
+    rg.addColorStop(0,"rgba(210,224,255,0.65)"); rg.addColorStop(1,"rgba(180,200,255,0)");
+    sctx.fillStyle=rg; sctx.beginPath(); sctx.arc(mx,my,SH*0.28,0,Math.PI*2); sctx.fill();
+    sctx.fillStyle="rgba(238,244,255,0.95)"; sctx.beginPath(); sctx.arc(mx,my,Math.max(6,SH*0.03),0,Math.PI*2); sctx.fill();
+  }
+
+  // clouds drift: speed tied to ground speed; holding pattern still drifts slowly
+  const move = state.screen!=="flight" ? 0
+             : (state.focus.running? (0.35 + ph.spd/870) : 0.25) * (REDUCED?0:1);
+  const nearGround = 1 - Math.min(1, alt/24000);         // low flight = clouds close & soft
+  clouds.forEach(function(c){
+    c.x -= c.v*move*dt;
+    if(c.x < -c.s*2){ c.x = SW + c.s*2; }
+    const cl = nearGround<0.5 ? 0.42 : 0.86;
+    const cy = c.y*(0.55+0.45*cl) + SH*(1-cl)*0.30;
+    const w = c.s*(2.6 + (1-cl)*2.0), h = w/1.79;
+    sctx.globalAlpha = Math.min(0.55, c.a * (cl<0.5? 0.6 : 1.35));
+    sctx.drawImage(cloudSprite, c.x - w/2, cy - h*0.55, w, h);
+  });
+  sctx.globalAlpha=1;
+
+  // ground haze/coast band, visible only when low
+  const groundA = (1 - Math.min(1, alt/16000)) * (inFlight? 1 : 0);
+  if(groundA>0.004){
+    sctx.globalAlpha=groundA*0.85;
+    const gg=sctx.createLinearGradient(0,SH*0.78,0,SH);
+    gg.addColorStop(0,"rgba(20,30,48,0)"); gg.addColorStop(1, palette(p).top);
+    sctx.fillStyle=gg; sctx.fillRect(0,SH*0.78,SW,SH*0.22);
+    if(p>0.85 || p<0.08){    // city lights at night
+      sctx.globalAlpha=groundA*0.9; sctx.fillStyle="rgba(255,206,130,0.9)";
+      for(let i=0;i<40;i++){
+        const sx=((i*97)%100)/100*SW, sy=SH*(0.90+(((i*53)%10)/100));
+        sctx.fillRect(sx, sy, 1.6, 1.6);
+      }
+    }
+    sctx.globalAlpha=1;
+  }
+
+  // wing + wingtip light (window view: wing sits low-left, tip toward centre)
+  const bob = REDUCED? 0 : Math.sin(performance.now()/900)*SH*0.006*(1+ (1-Math.min(1,alt/38000)));
+  const tipX = SW*0.455, tipY = SH*0.615;
+  sctx.save();
+  sctx.translate(0,bob);
+  sctx.beginPath();
+  sctx.moveTo(SW*0.09,SH*1.04);      // root, off-frame bottom
+  sctx.lineTo(SW*0.27,SH*0.655);     // leading edge
+  sctx.quadraticCurveTo(SW*0.37,SH*0.598, tipX,tipY);   // rounded leading edge to tip
+  sctx.lineTo(SW*0.415,SH*0.735);    // trailing edge at the tip
+  sctx.lineTo(SW*0.335,SH*1.04);     // trailing edge back to root
+  sctx.closePath();
+  const wg=sctx.createLinearGradient(SW*0.10,SH,SW*0.44,SH*0.60);
+  wg.addColorStop(0,"#070b13"); wg.addColorStop(0.72,"#1b2434"); wg.addColorStop(1,"#2d3850");
+  sctx.shadowColor="rgba(0,0,0,0.55)"; sctx.shadowBlur=18; sctx.shadowOffsetY=6;
+  sctx.fillStyle=wg; sctx.fill();
+  sctx.shadowColor="transparent"; sctx.shadowBlur=0; sctx.shadowOffsetY=0;
+  sctx.strokeStyle="rgba(200,225,255,0.20)"; sctx.lineWidth=1.1; sctx.stroke();
+  // wingtip nav light: red on the visible tip, blinking
+  const lit = REDUCED? true : (Math.floor(performance.now()/640)%2)===0;
+  sctx.fillStyle = lit? "rgba(255,86,86,0.95)" : "rgba(120,40,40,0.5)";
+  sctx.beginPath(); sctx.arc(tipX-1.5, tipY+2, 2.8, 0, Math.PI*2); sctx.fill();
+  if(lit){
+    const lg=sctx.createRadialGradient(tipX-1.5,tipY+2,0,tipX-1.5,tipY+2,16);
+    lg.addColorStop(0,"rgba(255,90,90,0.5)"); lg.addColorStop(1,"rgba(255,90,90,0)");
+    sctx.fillStyle=lg; sctx.beginPath(); sctx.arc(tipX-1.5,tipY+2,16,0,Math.PI*2); sctx.fill();
+  }
+  sctx.restore();
+
+  // window inner vignette
+  const vg=sctx.createRadialGradient(SW/2,SH/2,SH*0.25,SW/2,SH/2,SH*0.95);
+  vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(0,0,0,0.45)");
+  sctx.fillStyle=vg; sctx.fillRect(0,0,SW,SH);
+}
+
+/* ============================================================
+   FRAME LOOP
+   ============================================================ */
+function frame(now){
+  const dt=Math.min(0.05,(now-state.lastNow)/1000)||0;
+  state.lastNow=now; state.dt=dt;
+  if(state.screen==="flight"){
+    const el=tElapsed(state.focus);
+    if(state.focus.running && el>=state.focus.total-1e-6){ updateFlight(true); land(true); }
+    else updateFlight(false);
+  }
+  if(state.brk.total>0){
+    const be=Math.min(state.brk.total, tElapsed(state.brk));
+    const left=Math.max(0,state.brk.total-be);
+    $("breakTxt").textContent=fmtDur(left).replace(/^00:/,"")||"05:00";
+    if(state.brk.running && be>=state.brk.total-1e-6){ tPause(state.brk); $("breakBtn").textContent="☕ START BREAK"; $("breakTxt").textContent="00:00"; }
+  }
+  if(state.screen==="flight" || SW) drawSky(dt);
+  requestAnimationFrame(frame);
+}
+
+/* ============================================================
+   KEYBOARD (guarded against typing in fields)
+   ============================================================ */
+window.addEventListener("keydown", function(e){
+  const t=e.target, tag=t && t.tagName;
+  if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"||(t&&t.isContentEditable)) return;
+  if(e.code==="Space"){ if(state.screen==="flight"){ e.preventDefault(); togglePause(); } }
+  else if(e.key==="d"||e.key==="D"){ if(state.screen==="flight"){ e.preventDefault(); tAdd(state.focus,300); updateFlight(true); } }
+  else if(e.key==="r"||e.key==="R"){ if(state.screen==="flight"){ e.preventDefault(); tReset(state.focus,state.focusMin*60); tStart(state.focus); updateFlight(true); } }
+  else if(e.key==="Escape"){ if(state.screen==="flight"){ e.preventDefault(); divert(); } }
+});
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+load();
+buildOriginSelect();
+renderBoard();
+renderLog();
+paintSound();
+$("p_name").value=state.name;
+show("board");
+requestAnimationFrame(function(now){ state.lastNow=now; requestAnimationFrame(frame); });
+
+/* ---------- console handle ---------- */
+window.TOOL = {
+  version:VERSION,
+  state:state,
+  get destinations(){ return routesFor(state.origin); },
+  get log(){ return state.log; },
+  get progress(){ return flightProgress(); },
+  get remaining(){ return Math.max(0, state.focus.total - tElapsed(state.focus)); },
+  routesFor:routesFor, focusMinutesFor:focusMinutesFor, phaseAt:phaseAt, haversineKm:haversineKm,
+  origin:function(c){ state.origin=c; $("originSel").value=c; renderBoard(); },
+  pick:function(code){ const l=routesFor(state.origin).find(function(x){ return x.dest.code===code; }); if(l) selectLeg(l); return l||null; },
+  begin:beginBoarding, pause:togglePause, delay:function(s){ tAdd(state.focus,s||300); },
+  reset:function(){ tReset(state.focus,state.focusMin*60); tStart(state.focus); updateFlight(true); },
+  advance:function(sec){ tAdvance(state.focus,sec); tAdvance(state.brk,sec); },
+  land:function(ok){ land(ok!==false); },
+  divert:divert,
+  show:show, render:function(){ updateFlight(true); drawSky(0.016); },
+  setFocusMin:function(m){ state.focusMin=Math.max(1,m); updatePassFocus(); }
+};
+})();
+</script>
+</body>
+</html>
