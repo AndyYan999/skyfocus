@@ -24,12 +24,28 @@ polygons and a 1,149-airport database are embedded, so nothing is fetched at run
    browser for your position and snaps the origin to the closest field.
    "HOW IT WORKS" and "FLIGHT LOGBOOK" are off the home screen — they now live behind the `?`
    and `LOGBOOK` buttons in the top bar.
-3. **The aircraft always points up** on the map (no heading rotation). The progress bar under
+3. **The flight view follows the aircraft's nose.** The map is *heading-up*: the world turns
+   so the direction of travel always points straight up the screen, with the aircraft held at
+   the centre — the nose-up carriage map you get in a car, but for a great-circle track. A
+   compass rose in the corner shows where north is, and the HUD reads out `TRACK` (degrees from
+   north) and `VIEW`. `FIT` switches to a north-up overview of the whole route, `◎` re-acquires
+   the aircraft, and dragging the map drops it into a free north-up mode. The progress bar under
    the flight keeps its own aircraft pointing along the direction of travel. A pilot voice
    announces the flight: boarding and doors closed, "airborne, climbing to flight level three
    eight zero", cruising, descent, and arrival — each preceded by a cabin chime. Voice can be
    muted separately from the chime, and if speech synthesis is unavailable it falls back to
    chimes.
+
+   **Smoothness.** The camera eases toward its target (position, zoom and rotation, exponential
+   approach) instead of jumping, so switching between follow, overview and manual glides rather
+   than cuts. The world is rasterised once into a large cached square base and then blitted with
+   rotation and translation each frame, tolerating a ±35% scale difference, so easing a zoom
+   costs *no* re-render at all; a fresh base is only drawn when the aircraft drifts 6% across it
+   or the zoom settles far from the cached scale. Measured in Chrome: **median frame interval
+   16.7 ms, p95 16.9, max 17.5** with wheel-zoom hammered continuously, a base render costs
+   0.8–2.8 ms, and a whole flight needs about eight of them. The progress-bar aircraft is driven
+   every frame rather than by a CSS transition, and the home map's auto-fit is debounced while
+   the time slider is being dragged.
 4. **The home screen is a map plus a time bar.** It opens framed on your neighbourhood — your
    airport, the nearest legs, and an amber range ring showing how far the current session
    length reaches (the ring grows as you drag the time slider). Destinations inside the ring
@@ -70,6 +86,18 @@ Drag to pan, wheel to zoom, `＋ / − / FIT` on the map. `LOGBOOK` and `?` open
 ![In flight](shots/4-flight-map.png)
 ![Arrival pass](shots/5-landed.png)
 
+## Camera model
+
+| Mode | Behaviour |
+|---|---|
+| `FOLLOW` (default) | centred on the aircraft, rotated so its track points up |
+| `OVERVIEW` (`FIT`) | north up, whole route framed |
+| `MANUAL` (drag / wheel) | north up, free pan and zoom |
+
+The rotation is computed from the aircraft's own projected direction of travel, so "up" on the
+screen is the projected track — checked in the browser at several points along a flight: the
+track deviates from straight up by **0.01–0.03°**, with the aircraft **0.1 px** off centre.
+
 ## Building
 
 `index.html` is generated from a template plus two data files:
@@ -100,6 +128,11 @@ Found by sampling the rendered canvas rather than by looking at it:
   whole countries (the UK, France, Brazil) once the view moved.
 - **A longitude pre-filter on raw longitudes drops the Western Hemisphere**, because a ring at
   −74° is really in view at +286°. Let the clipper decide longitude.
+- **A rotated map needs a bigger base than the viewport.** A square base of side `1.08 ×
+  diagonal` looks sufficient and is not: once rotated, the corners of the viewport fall outside
+  it and you get black wedges. The base is `1.25 × diagonal`, which covers `hypot(W/2,H/2)` plus
+  the drift allowance at every angle — verified by sampling all four corners at seven headings
+  across a flight (zero black pixels).
 
 ## How this was made
 

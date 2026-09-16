@@ -172,7 +172,8 @@
   .pb-ends b{color:var(--ink);font-size:14px}
   .pb-track{position:relative;height:6px;border-radius:999px;background:#1b2740;margin:0 4px}
   .pb-fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:999px;background:linear-gradient(90deg,#2f6fbf,var(--amber))}
-  .pb-plane{position:absolute;top:50%;left:0;width:22px;height:22px;margin:-11px 0 0 -11px;fill:#fff;filter:drop-shadow(0 0 7px rgba(255,255,255,.55))}
+  .pb-plane{position:absolute;top:50%;left:0;width:22px;height:22px;margin:-11px 0 0 -11px;fill:#fff;
+    filter:drop-shadow(0 0 7px rgba(255,255,255,.55));will-change:left}
   .pb-ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--dim2);margin-top:9px}
 
   /* ---------- landed ---------- */
@@ -324,6 +325,8 @@
         <div><span>ALTITUDE</span><b id="altTxt">0 ft</b></div>
         <div><span>TO RUN</span><b id="distTxt">0 km</b></div>
         <div><span>ETA</span><b id="etaTxt">--:--</b></div>
+        <div><span>TRACK</span><b id="trkTxt">---°</b></div>
+        <div><span>VIEW</span><b id="viewTxt">FOLLOW</b></div>
       </div>
     </div>
     <div class="hud tr">
@@ -338,9 +341,10 @@
       </div>
     </div>
     <div class="mapbtns">
-      <button id="zoomIn">＋</button>
-      <button id="zoomOut">－</button>
-      <button id="zoomFit">FIT</button>
+      <button id="zoomIn" title="zoom in">＋</button>
+      <button id="zoomOut" title="zoom out">－</button>
+      <button id="zoomFit" title="whole route, north up">FIT</button>
+      <button id="followBtn" title="follow the aircraft, nose up">◎</button>
     </div>
     <div class="bottombar flight">
       <div class="pb-ends">
@@ -677,6 +681,69 @@ function ringBase(ring){
 }
 const LAYERS={ocean:true,graticule:true,land:true,borders:true};
 
+/* Draw the world into any 2D context with an explicit projection. Shared by
+   the north-up home map and the rotating, aircraft-following flight map. */
+function paintWorld(c, Wp, Hp, lon0, lat0, s, dpr, bandHalf){
+  const PX=function(lon){ return Wp/2 + (lon-lon0)*s; };
+  const PY=function(lat){ return Hp/2 - (lat-lat0)*s; };
+  c.setTransform(dpr,0,0,dpr,0,0);
+  c.clearRect(0,0,Wp,Hp);
+  const og=c.createLinearGradient(0,0,Wp*0.3,Hp);
+  og.addColorStop(0,"#071322"); og.addColorStop(0.5,"#081a2c"); og.addColorStop(1,"#061020");
+  if(LAYERS.ocean){ c.fillStyle=og; c.fillRect(0,0,Wp,Hp); }
+  const half=bandHalf||180;
+  const lonL=lon0-half, lonR=lon0+half;
+  const latTop=lat0+(Hp/2)/s, latBot=lat0-(Hp/2)/s, pad=3;
+  if(LAYERS.graticule){
+    c.lineWidth=1; c.strokeStyle="rgba(120,160,220,0.07)";
+    c.beginPath();
+    for(let lon=Math.ceil(lonL/15)*15; lon<=lonR; lon+=15){ const x=PX(lon); c.moveTo(x,0); c.lineTo(x,Hp); }
+    for(let lat=Math.ceil(latBot/15)*15; lat<=latTop; lat+=15){ const y=PY(lat); c.moveTo(0,y); c.lineTo(Wp,y); }
+    c.stroke();
+    c.strokeStyle="rgba(140,180,235,0.14)"; c.beginPath();
+    const ye=PY(0); c.moveTo(0,ye); c.lineTo(Wp,ye);
+    const xm=PX(0); c.moveTo(xm,0); c.lineTo(xm,Hp); c.stroke();
+  }
+  const landPath=new Path2D(), coastPath=new Path2D();
+  for(let i=0;i<LAND.length;i++){
+    const ring=LAND[i], b=bboxOf(ring);
+    if(b[3]<latBot-pad || b[2]>latTop+pad) continue;
+    const k=Math.round((lon0-ringBase(ring).mean)/360);
+    const pieces=clipRing(ringBase(ring).pts, lonL-k*360, lonR-k*360);
+    for(let j=0;j<pieces.length;j++){
+      const pc=pieces[j], rev=(signedArea(pc)<0)? pc.slice().reverse() : pc;
+      let first=true;
+      for(let n=0;n<rev.length;n++){
+        const x=PX(rev[n][0]+k*360), y=PY(rev[n][1]);
+        if(first){ landPath.moveTo(x,y); coastPath.moveTo(x,y); first=false; }
+        else { landPath.lineTo(x,y); coastPath.lineTo(x,y); }
+      }
+    }
+  }
+  if(LAYERS.land){
+    const lg=c.createLinearGradient(0,0,0,Hp);
+    lg.addColorStop(0,"#1b2c45"); lg.addColorStop(1,"#101d30");
+    c.fillStyle=lg; c.fill(landPath);
+    c.lineWidth=1; c.strokeStyle="#3d5f83"; c.stroke(coastPath);
+  }
+  if(LAYERS.borders && BORDERS.length){
+    const bp=new Path2D();
+    for(let i=0;i<BORDERS.length;i++){
+      const ring=BORDERS[i], b=bboxOf(ring);
+      if(b[3]<latBot-pad || b[2]>latTop+pad) continue;
+      const k=Math.round((lon0-ringBase(ring).mean)/360);
+      clipRing(ringBase(ring).pts, lonL-k*360, lonR-k*360).forEach(function(pc){
+        let first=true;
+        for(let n=0;n<pc.length;n++){
+          const x=PX(pc[n][0]+k*360), y=PY(pc[n][1]);
+          if(first){ bp.moveTo(x,y); first=false; } else bp.lineTo(x,y);
+        }
+      });
+    }
+    c.lineWidth=0.7; c.strokeStyle="rgba(74,110,158,0.5)"; c.stroke(bp);
+  }
+}
+
 function MapView(canvas){
   const ctx=canvas.getContext("2d");
   const view={lon0:0, lat0:20, zoom:1};
@@ -730,63 +797,7 @@ function MapView(canvas){
     renderBase:function(){
       if(!W) api.size();
       if(base.width!==canvas.width || base.height!==canvas.height){ base.width=canvas.width; base.height=canvas.height; }
-      const c=base.getContext("2d");
-      c.setTransform(DPR,0,0,DPR,0,0);
-      c.clearRect(0,0,W,H);
-      const og=c.createLinearGradient(0,0,W*0.3,H);
-      og.addColorStop(0,"#071322"); og.addColorStop(0.5,"#081a2c"); og.addColorStop(1,"#061020");
-      if(LAYERS.ocean){ c.fillStyle=og; c.fillRect(0,0,W,H); }
-      const latTop=api.invLat(0), latBot=api.invLat(H), pad=3;
-      const bandMin=view.lon0-180, bandMax=view.lon0+180;
-      if(LAYERS.graticule){
-        c.lineWidth=1; c.strokeStyle="rgba(120,160,220,0.07)";
-        c.beginPath();
-        const lonA=api.invLon(0), lonB=api.invLon(W);
-        for(let lon=Math.ceil(lonA/15)*15; lon<=lonB; lon+=15){ const x=api.px(lon); c.moveTo(x,0); c.lineTo(x,H); }
-        for(let lat=Math.ceil(latBot/15)*15; lat<=latTop; lat+=15){ const y=api.py(lat); c.moveTo(0,y); c.lineTo(W,y); }
-        c.stroke();
-        c.strokeStyle="rgba(140,180,235,0.14)"; c.beginPath();
-        const ye=api.py(0); c.moveTo(0,ye); c.lineTo(W,ye);
-        const xm=api.px(0); c.moveTo(xm,0); c.lineTo(xm,H); c.stroke();
-      }
-      const landPath=new Path2D(), coastPath=new Path2D();
-      for(let i=0;i<LAND.length;i++){
-        const ring=LAND[i], b=bboxOf(ring);
-        if(b[3] < latBot-pad || b[2] > latTop+pad) continue;
-        const k=Math.round((view.lon0-ringBase(ring).mean)/360);
-        const pieces=clipRing(ringBase(ring).pts, bandMin-k*360, bandMax-k*360);
-        for(let j=0;j<pieces.length;j++){
-          const pc=pieces[j], rev=(signedArea(pc)<0)? pc.slice().reverse() : pc;
-          let first=true;
-          for(let n=0;n<rev.length;n++){
-            const x=api.px(rev[n][0]+k*360), y=api.py(rev[n][1]);
-            if(first){ landPath.moveTo(x,y); coastPath.moveTo(x,y); first=false; }
-            else { landPath.lineTo(x,y); coastPath.lineTo(x,y); }
-          }
-        }
-      }
-      if(LAYERS.land){
-        const lg=c.createLinearGradient(0,0,0,H);
-        lg.addColorStop(0,"#1b2c45"); lg.addColorStop(1,"#101d30");
-        c.fillStyle=lg; c.fill(landPath);
-        c.lineWidth=1; c.strokeStyle="#3d5f83"; c.stroke(coastPath);
-      }
-      if(LAYERS.borders && BORDERS.length){
-        const bp=new Path2D();
-        for(let i=0;i<BORDERS.length;i++){
-          const ring=BORDERS[i], b=bboxOf(ring);
-          if(b[3] < latBot-pad || b[2] > latTop+pad) continue;
-          const k=Math.round((view.lon0-ringBase(ring).mean)/360);
-          clipRing(ringBase(ring).pts, bandMin-k*360, bandMax-k*360).forEach(function(pc){
-            let first=true;
-            for(let n=0;n<pc.length;n++){
-              const x=api.px(pc[n][0]+k*360), y=api.py(pc[n][1]);
-              if(first){ bp.moveTo(x,y); first=false; } else bp.lineTo(x,y);
-            }
-          });
-        }
-        c.lineWidth=0.7; c.strokeStyle="rgba(74,110,158,0.5)"; c.stroke(bp);
-      }
+      paintWorld(base.getContext("2d"), W, H, view.lon0, view.lat0, api.pxPerDeg(), DPR, 180);
       ready=true; key=api.keyOf();
     },
     keyOf:function(){ return W+"x"+H+"@"+view.zoom.toFixed(3)+","+view.lon0.toFixed(2)+","+view.lat0.toFixed(2); },
@@ -825,12 +836,150 @@ function MapView(canvas){
   return api;
 }
 
+
+/* ============================================================
+   FLIGHT VIEW — heading-up camera that follows the aircraft.
+   The world is drawn into a large cached square base, then blitted
+   rotated (so the aircraft's track always points up the screen) and
+   translated (so the aircraft stays centred). Re-rendering the base
+   only on drift keeps every frame a cheap GPU blit.
+   ============================================================ */
+function FlightView(canvas){
+  const ctx=canvas.getContext("2d");
+  const cam={lon:0,lat:0,zoom:8,rot:0};
+  const tgt={lon:0,lat:0,zoom:8,rot:0};
+  const bc={canvas:document.createElement("canvas"), lon0:0, lat0:0, s:0, size:0};
+  let W=0,H=0,DPR=1,BD=1,D=0,mode="track",baseRenders=0,lastBaseMs=0,heading=0;
+  function ang(a){ while(a>Math.PI) a-=2*Math.PI; while(a<-Math.PI) a+=2*Math.PI; return a; }
+  function wrapLon(a,b){ let d=a-b; while(d>180) d-=360; while(d<-180) d+=360; return d; }
+  function baseScale(){ return Math.min(W/360,H/180); }
+  function scale(){ return baseScale()*cam.zoom; }
+  function minZoom(){ return Math.max(1,(W/2)/(178*baseScale())); }
+  const api={
+    canvas:canvas, ctx:ctx, cam:cam, tgt:tgt,
+    get W(){ return W; }, get H(){ return H; }, get mode(){ return mode; },
+    get baseRenders(){ return baseRenders; }, get baseSize(){ return D; },
+    get heading(){ return heading; }, get scalePx(){ return scale(); },
+    get lastBaseMs(){ return lastBaseMs; },
+    size:function(){
+      const r=canvas.getBoundingClientRect();
+      DPR=Math.min(2, window.devicePixelRatio||1);
+      W=Math.max(200,Math.round(r.width)); H=Math.max(150,Math.round(r.height));
+      canvas.width=Math.round(W*DPR); canvas.height=Math.round(H*DPR);
+      BD=Math.min(DPR,1.5);
+      // a rotated square of side D covers a W x H viewport at any angle when
+      // D/2 >= hypot(W/2,H/2) + drift margin; 1.25x diagonal does that with an
+      // 7.5% drift allowance, so a corner can never fall outside the base
+      D=Math.max(64, Math.ceil(Math.hypot(W,H)*1.25));
+      bc.size=0;
+    },
+    nearView:function(lon){ return lon + 360*Math.round(wrapLon(cam.lon,lon)/360); },
+    setMode:function(m){ mode=m||"track"; if(mode!=="track") tgt.rot=0; },
+    look:function(lon,lat,zoom,rot){
+      tgt.lon=lon; tgt.lat=lat;
+      tgt.zoom=Math.max(minZoom(), Math.min(60, zoom));
+      tgt.rot=rot||0;
+    },
+    jump:function(){ cam.lon=tgt.lon; cam.lat=tgt.lat; cam.zoom=tgt.zoom; cam.rot=tgt.rot; },
+    zoomBy:function(f){ api.look(tgt.lon,tgt.lat,tgt.zoom*f,tgt.rot); },
+    pan:function(dx,dy){
+      mode="manual"; tgt.rot=0;
+      const S=scale(), c=Math.cos(cam.rot), si=Math.sin(cam.rot);
+      const wx=dx*c+dy*si, wy=-dx*si+dy*c;
+      cam.lon -= wx/S; cam.lat += wy/S;
+      tgt.lon=cam.lon; tgt.lat=cam.lat; tgt.zoom=cam.zoom;
+    },
+    fitRoute:function(points){
+      if(!points.length) return;
+      let a=points[0].lon, c=points[0].lon, d=points[0].lat, e=points[0].lat;
+      points.forEach(function(p){
+        const lon=p.lon + 360*Math.round((points[0].lon-p.lon)/360);
+        if(lon<a) a=lon; if(lon>c) c=lon;
+        if(p.lat<d) d=p.lat; if(p.lat>e) e=p.lat;
+      });
+      const lonSpan=Math.max(4, Math.min(350, c-a)), latSpan=Math.max(3, e-d);
+      const b=baseScale();
+      mode="route"; tgt.rot=0;
+      api.look((a+c)/2, (d+e)/2, Math.min(0.74*W/lonSpan, 0.60*H/latSpan)/b, 0);
+    },
+    setTrack:function(plane, ahead){                 // follow the nose
+      const S=scale();
+      const vx=(ahead.lon-plane.lon)*S, vy=-(ahead.lat-plane.lat)*S;
+      if(Math.abs(vx)>1e-9 || Math.abs(vy)>1e-9){
+        tgt.rot = -Math.atan2(vx,-vy);
+        heading = (Math.atan2(vx,-vy)*DEG+360)%360;
+      }
+      tgt.lon=plane.lon; tgt.lat=plane.lat;
+    },
+    step:function(dt){
+      const d=(typeof dt==="number" && isFinite(dt))? Math.max(0.001,Math.min(0.2,dt)) : 0.016;
+      const k=1-Math.exp(-d*5.2);
+      cam.lon += wrapLon(tgt.lon,cam.lon)*k;
+      cam.lat += (tgt.lat-cam.lat)*k;
+      cam.zoom += (tgt.zoom-cam.zoom)*k;
+      cam.rot += ang(tgt.rot-cam.rot)*k;
+    },
+    ensureBase:function(){
+      if(!D) api.size();
+      const S=scale();
+      const drift = Math.max(Math.abs(wrapLon(cam.lon,bc.lon0)), Math.abs(cam.lat-bc.lat0))*S;
+      const kr = bc.s? S/bc.s : 0;                 // how far the base scale has drifted
+      // while the camera is easing its zoom, stretch the existing base instead of
+      // re-rendering under the user's eyes: no frame ever pays the rasterisation
+      const zooming = Math.abs(tgt.zoom-cam.zoom) > Math.max(0.002, cam.zoom*0.01);
+      const loMin = zooming? 0.40 : 0.80, hiMax = zooming? 2.60 : 1.22;
+      const scaleOK = kr>loMin && kr<hiMax;
+      if(bc.size===D && scaleOK && drift < D*0.06) return;
+      bc.size=D;
+      bc.canvas.width=Math.round(D*BD); bc.canvas.height=Math.round(D*BD);
+      const t0=performance.now();
+      paintWorld(bc.canvas.getContext("2d"), D, D, cam.lon, cam.lat, S, BD, (D/2)/S+2);
+      lastBaseMs=performance.now()-t0;
+      bc.lon0=cam.lon; bc.lat0=cam.lat; bc.s=S; baseRenders++;
+    },
+    begin:function(){
+      api.ensureBase();
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      ctx.clearRect(0,0,W,H);
+      const S=scale(), k=S/bc.s, size=D*k;
+      ctx.save();
+      ctx.translate(W/2,H/2);
+      ctx.rotate(cam.rot);
+      ctx.imageSmoothingEnabled=true;
+      if(ctx.imageSmoothingQuality) ctx.imageSmoothingQuality="high";
+      ctx.drawImage(bc.canvas, 0,0,bc.canvas.width,bc.canvas.height,
+        -size/2 + (bc.lon0-cam.lon)*S, -size/2 + (cam.lat-bc.lat0)*S, size, size);
+    },
+    end:function(){ ctx.restore(); },
+    worldRing:function(points, style){
+      const S=scale();
+      ctx.save(); ctx.beginPath();
+      for(let i=0;i<points.length;i++){
+        const x=(points[i].lon-cam.lon)*S, y=(cam.lat-points[i].lat)*S;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      if(style.dash) ctx.setLineDash(style.dash); else ctx.setLineDash([]);
+      ctx.lineWidth=style.width||1.5; ctx.strokeStyle=style.color||"#fff";
+      ctx.lineCap="round"; ctx.lineJoin="round";
+      if(style.glow){ ctx.shadowColor=style.glow; ctx.shadowBlur=9; }
+      ctx.stroke(); ctx.restore();
+    },
+    project:function(lon,lat){
+      const S=scale();
+      const x=(lon-cam.lon)*S, y=(cam.lat-lat)*S;
+      const c=Math.cos(cam.rot), si=Math.sin(cam.rot);
+      return {x:W/2 + x*c - y*si, y:H/2 + x*si + y*c};
+    }
+  };
+  return api;
+}
+
 /* ============================================================
    VIEWS
    ============================================================ */
 const homeMapEl=$("homeMap"), flightMapEl=$("map");
 const homeMap = MapView(homeMapEl);
-const flightMap = MapView(flightMapEl);
+const flightMap = FlightView(flightMapEl);
 function activeMap(){ return state.screen==="flight" ? flightMap : homeMap; }
 
 /* ---------- destination geometry helpers ---------- */
@@ -951,39 +1100,79 @@ function buildRoute(){
 }
 function fitFlightRoute(){
   const o=findAirport(state.origin);
-  if(samples.length && o){ flightMap.fitTo(samples.concat([o, state.dest])); }
+  if(samples.length && o) flightMap.fitRoute(samples.concat([o, state.dest]));
 }
 const PLANE_PATH=new Path2D("M21 16v-2l-8-5V3.5A1.5 1.5 0 0 0 11.5 2A1.5 1.5 0 0 0 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z");
-function drawFlight(){
+function screenLabel(ctx, pt, text, color, above){
+  ctx.save();
+  ctx.font="600 12px ui-monospace,Menlo,monospace";
+  const tw=ctx.measureText(text).width;
+  const ly=pt.y+(above? -13 : 20);
+  ctx.beginPath(); ctx.arc(pt.x,pt.y,4.4,0,Math.PI*2);
+  ctx.fillStyle=color; ctx.fill();
+  ctx.lineWidth=1.6; ctx.strokeStyle="rgba(5,10,20,.85)"; ctx.stroke();
+  ctx.fillStyle="rgba(6,12,22,0.74)";
+  ctx.fillRect(pt.x-tw/2-6, ly-11, tw+12, 16);
+  ctx.fillStyle="#e8eef8"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText(text, pt.x, ly-3);
+  ctx.restore();
+}
+function drawNorth(ctx, m){
+  const cx=m.W-46, cy=104;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,17,0,Math.PI*2);
+  ctx.fillStyle="rgba(13,21,35,.82)"; ctx.fill();
+  ctx.lineWidth=1; ctx.strokeStyle="rgba(43,60,92,.95)"; ctx.stroke();
+  ctx.translate(cx,cy); ctx.rotate(m.cam.rot);
+  ctx.beginPath(); ctx.moveTo(0,-11); ctx.lineTo(4.2,2.5); ctx.lineTo(0,-1.5); ctx.lineTo(-4.2,2.5); ctx.closePath();
+  ctx.fillStyle="#ff8a8a"; ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.fillStyle="rgba(200,215,235,.75)"; ctx.font="600 9px ui-monospace,Menlo,monospace";
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText("N", cx, cy+26);
+  ctx.restore();
+}
+function drawFlight(dt){
+  if(typeof dt!=="number" || !isFinite(dt)) dt=0.016;
   const m=flightMap;
   if(!m.W) m.size();
-  m.clear(); m.blit();
   const o=findAirport(state.origin), d=state.dest;
-  if(!samples.length || !d) return;
-  const p=routeProgress(), idx=Math.max(0,Math.min(samples.length-1, Math.round(p*(samples.length-1))));
-  m.ring(samples, {color:"rgba(255,255,255,0.32)", width:1.8, dash:[7,7]});
-  m.ring(samples.slice(0, idx+1), {color:"#ffb347", width:2.6, glow:"rgba(255,179,71,.75)"});
-  m.label(o.lon, o.lat, o.code, false, "#48d597");
-  m.label(d.lon, d.lat, d.code, true, "#ffb347");
-  const pt=pointAt(p);
-  const x=m.px(pt.lon), y=m.py(pt.lat);
-  planeScreen={x:x, y:y, lon:pt.lon, lat:pt.lat};
-  const ctx=m.ctx, size=26;
+  if(!samples.length || !d){
+    m.step(dt); m.begin(); m.end(); return;
+  }
+  const p=routeProgress();
+  const plane=pointAt(p), ahead=pointAt(Math.min(1, p+0.006));
+  if(m.mode==="track") m.setTrack(plane, ahead);
+  m.step(dt);
+  const idx=Math.max(0,Math.min(samples.length-1, Math.round(p*(samples.length-1))));
+  m.begin();
+  m.worldRing(samples.slice(Math.max(0,idx-1)), {color:"rgba(255,255,255,0.32)", width:1.8, dash:[7,7]});
+  m.worldRing(samples.slice(0, idx+1), {color:"#ffb347", width:2.6, glow:"rgba(255,179,71,.75)"});
+  m.end();
+  const ctx=m.ctx;
+  screenLabel(ctx, m.project(m.nearView(o.lon), o.lat), o.code, "#48d597", false);
+  screenLabel(ctx, m.project(m.nearView(d.lon), d.lat), d.code, "#ffb347", true);
+  const sp=m.project(plane.lon, plane.lat);
+  planeScreen={x:sp.x, y:sp.y, lon:plane.lon, lat:plane.lat, heading:m.heading};
+  // soft halo so the white aircraft reads on any background
+  const size=26;
   ctx.save();
-  ctx.beginPath(); ctx.arc(x,y,size*0.62,0,Math.PI*2);
-  const hg=ctx.createRadialGradient(x,y,0,x,y,size*0.62);
+  ctx.beginPath(); ctx.arc(sp.x,sp.y,size*0.62,0,Math.PI*2);
+  const hg=ctx.createRadialGradient(sp.x,sp.y,0,sp.x,sp.y,size*0.62);
   hg.addColorStop(0,"rgba(10,18,32,0.5)"); hg.addColorStop(1,"rgba(10,18,32,0)");
   ctx.fillStyle=hg; ctx.fill();
   if(!REDUCED){
     const pulse=(performance.now()%1600)/1600;
-    ctx.beginPath(); ctx.arc(x,y,size*0.55+pulse*size*0.75,0,Math.PI*2);
+    ctx.beginPath(); ctx.arc(sp.x,sp.y,size*0.55+pulse*size*0.75,0,Math.PI*2);
     ctx.strokeStyle="rgba(255,255,255,"+(0.3*(1-pulse)).toFixed(3)+")"; ctx.lineWidth=1.2; ctx.stroke();
   }
-  // the aircraft always points up, as asked - no heading rotation
-  ctx.translate(x,y); ctx.scale(size/24, size/24); ctx.translate(-12,-12);
+  // nose always points up: the map turns, not the aircraft
+  ctx.translate(sp.x,sp.y); ctx.scale(size/24, size/24); ctx.translate(-12,-12);
   ctx.fillStyle="#ffffff"; ctx.shadowColor="rgba(0,0,0,.75)"; ctx.shadowBlur=4;
   ctx.fill(PLANE_PATH);
   ctx.restore();
+  drawNorth(ctx, m);
 }
 
 /* ============================================================
@@ -1070,7 +1259,12 @@ function setSlider(v,refit){
   $("timeSlider").value=state.focusMin;
   $("sliderVal").textContent=String(state.focusMin);
   updateHomeMeta(); renderDestCard(); save();
-  if(refit!==false && !state.homeUserMoved) fitHome();
+  if(refit!==false && !state.homeUserMoved) scheduleHomeFit();
+}
+let homeFitTimer=null;
+function scheduleHomeFit(){
+  if(homeFitTimer) clearTimeout(homeFitTimer);
+  homeFitTimer=setTimeout(function(){ homeFitTimer=null; fitHome(); }, 140);
 }
 function fitHome(){
   markHome();
@@ -1243,7 +1437,7 @@ function show(name){
     document.getElementById("screen-"+s).classList.toggle("active", s===name);
   });
   if(name==="home"){ homeMap.size(); fitHomeIfNeeded(); updateHomeMeta(); renderDestCard(); drawHome(); sizeBars(); }
-  if(name==="flight"){ flightMap.size(); flightMap.renderBase(); }
+  if(name==="flight"){ flightMap.size(); }
   if(name==="landed"){ renderLog(); }
 }
 function fitHomeIfNeeded(){
@@ -1264,7 +1458,10 @@ function beginBoarding(){
   for(const k in said) delete said[k];
   buildRoute();
   show("flight");
-  flightMap.size(); fitFlightRoute(); flightMap.renderBase();
+  flightMap.size();
+  fitFlightRoute();
+  flightMap.jump();                       // start framed on the route, then ease into follow mode
+  flightMap.setMode("track");
   $("routeTxt").innerHTML=leg.origin.code+" → "+leg.dest.code+" · <b>Focus Airways "+state.flightNo+"</b>";
   $("ribFrom").textContent=leg.origin.code; $("ribTo").textContent=leg.dest.code;
   $("ribFromCity").textContent=leg.origin.city; $("ribToCity").textContent=leg.dest.city;
@@ -1401,6 +1598,9 @@ function updateFlight(hard){
   $("ribFill").style.width=(p*100).toFixed(2)+"%";
   $("ribPlane").style.left=(p*100).toFixed(2)+"%";
   $("ribPct").textContent=Math.round(p*100)+"%";
+  const trk=document.getElementById("trkTxt"), vw=document.getElementById("viewTxt");
+  if(trk) trk.textContent=String(Math.round(flightMap.heading)).padStart(3,"0")+"°";
+  if(vw) vw.textContent = flightMap.mode==="track"? "FOLLOW" : (flightMap.mode==="route"? "OVERVIEW" : "MANUAL");
   document.title = state.focus.running? fmtDur(remain)+" → "+leg.dest.code+" · SKYFOCUS" : "SKYFOCUS — focus flight timer";
   if(hard) $("pauseBtn").textContent = state.focus.running? "⏸ PAUSE" : "▶ RESUME";
   if(state.focus.running){
@@ -1409,9 +1609,10 @@ function updateFlight(hard){
     if(ph.name==="DESCENT"||ph.name==="APPROACH") announce("descent","Beginning our descent into "+(leg.dest.city||leg.dest.code)+".");
   }
 }
-$("zoomIn").addEventListener("click", function(){ flightMap.zoomBy(1.5); });
-$("zoomOut").addEventListener("click", function(){ flightMap.zoomBy(1/1.5); });
-$("zoomFit").addEventListener("click", function(){ fitFlightRoute(); flightMap.renderBase(); });
+$("zoomIn").addEventListener("click", function(){ flightMap.zoomBy(1.35); });
+$("zoomOut").addEventListener("click", function(){ flightMap.zoomBy(1/1.35); });
+$("zoomFit").addEventListener("click", function(){ fitFlightRoute(); });
+$("followBtn").addEventListener("click", function(){ flightMap.setMode("track"); });
 $("homeZoomIn").addEventListener("click", function(){ state.homeUserMoved=true; homeMap.zoomBy(1.5); });
 $("homeZoomOut").addEventListener("click", function(){ state.homeUserMoved=true; homeMap.zoomBy(1/1.5); });
 $("homeFit").addEventListener("click", function(){ state.homeUserMoved=false; fitHome(); drawHome(); });
@@ -1428,7 +1629,10 @@ function attachPan(el, m){
     lx=e.clientX; ly=e.clientY;
     if(m===homeMap && moved>4){ state.homeUserMoved=true; markHome(); }
   });
-  el.addEventListener("wheel", function(e){ e.preventDefault(); m.zoomBy(e.deltaY<0?1.12:1/1.12, e.clientX-el.getBoundingClientRect().left, e.clientY-el.getBoundingClientRect().top); if(m===homeMap){ state.homeUserMoved=true; markHome(); } }, {passive:false});
+  el.addEventListener("wheel", function(e){ e.preventDefault();
+    if(m===homeMap) m.zoomBy(e.deltaY<0?1.12:1/1.12, e.clientX-el.getBoundingClientRect().left, e.clientY-el.getBoundingClientRect().top);
+    else { m.setMode("manual"); m.zoomBy(e.deltaY<0?1.12:1/1.12); }
+    if(m===homeMap){ state.homeUserMoved=true; markHome(); } }, {passive:false});
   el.addEventListener("touchstart", function(e){ if(e.touches[0]){ lx=e.touches[0].clientX; ly=e.touches[0].clientY; } });
   el.addEventListener("touchmove", function(e){
     const t=e.touches[0]; if(!t) return;
@@ -1596,7 +1800,7 @@ window.addEventListener("keydown", function(e){
 if(window.ResizeObserver){
   new ResizeObserver(function(){ sizeBars();
     if(state.screen==="home"){ homeMap.size(); fitHomeIfNeeded(); drawHome(); }
-    if(state.screen==="flight"){ flightMap.size(); flightMap.renderBase(); } }).observe(document.body);
+    if(state.screen==="flight"){ flightMap.size(); } }).observe(document.body);
 }
 function frame(now){
   const dt=Math.min(0.05,(now-state.lastNow)/1000)||0;
@@ -1604,7 +1808,7 @@ function frame(now){
   if(state.screen==="flight"){
     const el=tElapsed(state.focus);
     if(state.focus.running && el>=state.focus.total-1e-6){ updateFlight(true); land(true); }
-    else { updateFlight(false); drawFlight(); }
+    else { updateFlight(false); drawFlight(dt); }
   } else if(state.screen==="home"){
     if(homeDirty || homeMap.key!==lastHomeKey) drawHome();
   }
@@ -1644,6 +1848,12 @@ window.TOOL = {
   get remaining(){ return Math.max(0, state.focus.total - tElapsed(state.focus)); },
   get samples(){ return samples; },
   get planeScreen(){ return planeScreen; },
+  get flightView(){ return {baseMs:+flightMap.lastBaseMs.toFixed(1), mode:flightMap.mode, cam:{lon:flightMap.cam.lon, lat:flightMap.cam.lat, zoom:flightMap.cam.zoom, rot:flightMap.cam.rot},
+    heading:flightMap.heading, baseRenders:flightMap.baseRenders, baseSize:flightMap.baseSize, W:flightMap.W, H:flightMap.H}; },
+  flightScreen:function(lon,lat){ return flightMap.project(lon,lat); },
+  flightNear:function(lon){ return flightMap.nearView(lon); },
+  follow:function(){ flightMap.setMode("track"); },
+  overview:function(){ fitFlightRoute(); },
   get voiceLog(){ return voiceLog; },
   get said(){ return Object.keys(said); },
   airports:function(){ return allAirports(); },
