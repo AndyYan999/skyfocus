@@ -883,7 +883,9 @@ function FlightView(canvas){
     jump:function(){ cam.lon=tgt.lon; cam.lat=tgt.lat; cam.zoom=tgt.zoom; cam.rot=tgt.rot; },
     zoomBy:function(f){ api.look(tgt.lon,tgt.lat,tgt.zoom*f,tgt.rot); },
     pan:function(dx,dy){
-      mode="manual"; tgt.rot=0;
+      // dragging looks around the map; the camera keeps orienting up the route,
+      // so the view never loses its heading
+      if(mode==="track") mode="manual";
       const S=scale(), c=Math.cos(cam.rot), si=Math.sin(cam.rot);
       const wx=dx*c+dy*si, wy=-dx*si+dy*c;
       cam.lon -= wx/S; cam.lat += wy/S;
@@ -902,13 +904,16 @@ function FlightView(canvas){
       mode="route"; tgt.rot=0;
       api.look((a+c)/2, (d+e)/2, Math.min(0.74*W/lonSpan, 0.60*H/latSpan)/b, 0);
     },
-    setTrack:function(plane, ahead){                 // follow the nose
+    setHeading:function(plane, ahead){               // orient up the route
       const S=scale();
       const vx=(ahead.lon-plane.lon)*S, vy=-(ahead.lat-plane.lat)*S;
       if(Math.abs(vx)>1e-9 || Math.abs(vy)>1e-9){
         tgt.rot = -Math.atan2(vx,-vy);
         heading = (Math.atan2(vx,-vy)*DEG+360)%360;
       }
+    },
+    setTrack:function(plane, ahead){                 // follow the nose and the aircraft
+      api.setHeading(plane, ahead);
       tgt.lon=plane.lon; tgt.lat=plane.lat;
     },
     step:function(dt){
@@ -1144,6 +1149,7 @@ function drawFlight(dt){
   const p=routeProgress();
   const plane=pointAt(p), ahead=pointAt(Math.min(1, p+0.006));
   if(m.mode==="track") m.setTrack(plane, ahead);
+  else if(m.mode==="manual") m.setHeading(plane, ahead);   // keep the nose up while panned
   m.step(dt);
   const idx=Math.max(0,Math.min(samples.length-1, Math.round(p*(samples.length-1))));
   m.begin();
@@ -1191,36 +1197,61 @@ function tone(freq,dur,delay,gain){
   o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0+dur+0.05);
 }
 function cabinChime(){ tone(1174,0.28,0,0.12); tone(1568,0.42,0.16,0.1); }
-function chime(){ tone(784,0.5,0,0.16); tone(1046,0.7,0.18,0.14); }
 let voice=null;
+// Cabin-crew voices read far better than the default: prefer the natural local
+// system voices by name, then any English voice.
+const VOICE_PREF=[/samantha/i,/serena/i,/karen/i,/moira/i,/tessa/i,/fiona/i,/kate/i,/allison/i,
+  /daniel/i,/alex/i,/ava/i,/zoe/i,/google us english/i,/google uk english female/i,
+  /microsoft aria/i,/microsoft jenny/i,/microsoft libby/i,/microsoft sonia/i,/microsoft michelle/i];
 function pickVoice(){
   if(!window.speechSynthesis) return;
   const vs=window.speechSynthesis.getVoices()||[];
-  voice = vs.find(function(v){ return /^en-GB/i.test(v.lang); })
-       || vs.find(function(v){ return /^en/i.test(v.lang); }) || null;
+  if(!vs.length) return;
+  let best=null, bestScore=0;
+  vs.forEach(function(v){
+    let s=0;
+    for(let i=0;i<VOICE_PREF.length;i++){ if(VOICE_PREF[i].test(v.name)){ s=VOICE_PREF.length-i+10; break; } }
+    if(!s && /^en/i.test(v.lang)) s=1;
+    if(v.localService) s+=0.5;
+    if(s>bestScore){ bestScore=s; best=v; }
+  });
+  if(best) voice=best;
 }
 if(window.speechSynthesis){ pickVoice(); window.speechSynthesis.onvoiceschanged=pickVoice; }
-function say(text){                                   // pilot PA
+function say(text){
   if(!state.voice || !text) return;
   voiceLog.push(text);
-  if(!window.speechSynthesis || !window.SpeechSynthesisUtterance){               // fallback: chime only
+  if(!window.speechSynthesis || !window.SpeechSynthesisUtterance){    // no speech engine: chime only
     cabinChime();
     return;
   }
   try{
     const u=new window.SpeechSynthesisUtterance(text);
-    u.rate=0.98; u.pitch=0.85; u.volume=1;
+    u.rate=0.95; u.pitch=1.0; u.volume=1;      // measured, conversational, not a sat-nav bark
     if(voice) u.voice=voice;
     window.speechSynthesis.speak(u);
   }catch(e){ cabinChime(); }
 }
+// A PA announcement is a chime, one line, a beat, then the second line - not one
+// run-on sentence. The beat is scaled to the length of the first line.
+function speakSeq(lines){
+  if(window.speechSynthesis && window.speechSynthesis.cancel) window.speechSynthesis.cancel();
+  lines=lines.filter(Boolean);
+  if(!lines.length) return;
+  let at = 0;
+  if(state.sound){ cabinChime(); at = 520; }
+  lines.forEach(function(line, i){
+    setTimeout(function(){ say(line); }, at);
+    at += 700 + line.length*55 + (i<lines.length-1? 500 : 0);
+  });
+}
+function spokenDigits(s){ return String(s).split("").join(" "); }
+function spokenCities(n){ return n + (n===1? " minute":" minutes"); }
 const said={};
-function announce(key,text){
+function announce(key, fn){
   if(said[key]) return;
   said[key]=true;
-  if(!state.sound && !state.voice) return;
-  if(state.sound) cabinChime();
-  setTimeout(function(){ say(text); }, state.sound? 420 : 0);
+  if(state.voice || state.sound) fn();
 }
 
 /* ============================================================
@@ -1466,14 +1497,18 @@ function beginBoarding(){
   $("ribFrom").textContent=leg.origin.code; $("ribTo").textContent=leg.dest.code;
   $("ribFromCity").textContent=leg.origin.city; $("ribToCity").textContent=leg.dest.city;
   $("subjectTxt").textContent=state.subject;
-  announce("board","Focus Airways, cabin crew prepare for departure. This is flight "+state.flightNo+
-    " to "+(leg.dest.city||leg.dest.code)+", a "+state.focusMin+" minute "+state.subject+" session.");
+  announce("departure", function(){ speakSeq([
+    "Cabin crew, doors for departure.",
+    "Welcome aboard Focus Airways, flight "+spokenDigits(state.flightNo.replace(/^FX/,""))+", service to "+
+      (leg.dest.city||leg.dest.code)+". Today's session is "+spokenCities(state.focusMin)+" of "+
+      state.subject.toLowerCase()+". Please stow your distractions, and enjoy the flight."
+  ]); });
   updateFlight(true);
 }
 function togglePause(){
   if(state.screen!=="flight") return;
-  if(state.focus.running){ tPause(state.focus); say("Holding. Your flight is paused."); }
-  else if(tElapsed(state.focus)<state.focus.total){ tStart(state.focus); say("Resuming the flight."); }
+  if(state.focus.running) tPause(state.focus);
+  else if(tElapsed(state.focus)<state.focus.total) tStart(state.focus);
   updateFlight(true);
 }
 $("beginBtn").addEventListener("click", beginBoarding);
@@ -1514,9 +1549,11 @@ function land(completed){
     state.landedStatus="LANDED"; state.landedMin=state.focusMin;
     state.landedKm=leg.km; state.landedSecs=el;
     addLog("LANDED", state.focusMin, leg.km, el);
-    chime();
-    say("Welcome to "+leg.dest.city+". "+state.focusMin+" minutes of "+state.subject+" logged. Local time "+
-      fmtClock(new Date())+".");
+    announce("arrival", function(){ speakSeq([
+      "Ladies and gentlemen, we have just landed at "+(leg.dest.city||leg.dest.code)+".",
+      "Thank you for flying with us. That was "+spokenCities(state.landedMin)+" of "+state.subject.toLowerCase()+
+        " logged. Local time is "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})+"."
+    ]); });
   }
   state.arrivedAt=new Date();
   state.breakState="idle";
@@ -1556,14 +1593,12 @@ function startBreak(){
   tReset(state.brk, state.breakLen*60);
   tStart(state.brk);
   state.breakState="running";
-  announce("break","Turnaround. Take "+(state.breakLen===5? "five" : state.breakLen===10? "ten minutes":"fifteen minutes")+". Next flight boards when you are ready.");
   paintBreak();
 }
 function skipBreak(){
   tPause(state.brk);
   tReset(state.brk, state.breakLen*60);
   state.breakState="skipped";
-  say("Break skipped. Boarding for the next flight.");
   paintBreak();
 }
 $("breakBtn").addEventListener("click", function(){
@@ -1600,14 +1635,9 @@ function updateFlight(hard){
   $("ribPct").textContent=Math.round(p*100)+"%";
   const trk=document.getElementById("trkTxt"), vw=document.getElementById("viewTxt");
   if(trk) trk.textContent=String(Math.round(flightMap.heading)).padStart(3,"0")+"°";
-  if(vw) vw.textContent = flightMap.mode==="track"? "FOLLOW" : (flightMap.mode==="route"? "OVERVIEW" : "MANUAL");
+  if(vw) vw.textContent = flightMap.mode==="track"? "FOLLOW" : (flightMap.mode==="route"? "OVERVIEW" : "PANNED");
   document.title = state.focus.running? fmtDur(remain)+" → "+leg.dest.code+" · SKYFOCUS" : "SKYFOCUS — focus flight timer";
   if(hard) $("pauseBtn").textContent = state.focus.running? "⏸ PAUSE" : "▶ RESUME";
-  if(state.focus.running){
-    if(ph.name==="CLIMB"||ph.name==="TAKEOFF") announce("climb","Airborne. Climbing to flight level three eight zero. Keep your "+state.subject+" in front of you.");
-    if(ph.name==="CRUISE") announce("cruise","Cruising at flight level three eight zero. "+fmtNum(remain/60)+" minutes to "+(leg.dest.city||leg.dest.code)+".");
-    if(ph.name==="DESCENT"||ph.name==="APPROACH") announce("descent","Beginning our descent into "+(leg.dest.city||leg.dest.code)+".");
-  }
 }
 $("zoomIn").addEventListener("click", function(){ flightMap.zoomBy(1.35); });
 $("zoomOut").addEventListener("click", function(){ flightMap.zoomBy(1/1.35); });
@@ -1624,14 +1654,16 @@ function attachPan(el, m){
   window.addEventListener("mouseup", function(){ down=false; el.classList.remove("dragging"); });
   window.addEventListener("mousemove", function(e){
     if(!down) return;
-    m.pan(e.clientX-lx, e.clientY-ly);
-    moved+=Math.abs(e.clientX-lx)+Math.abs(e.clientY-ly);
+    const dx=e.clientX-lx, dy=e.clientY-ly;
+    moved+=Math.abs(dx)+Math.abs(dy);
+    if(moved<6) return;                  // a click or pointer jitter must not move the map
+    m.pan(dx,dy);
     lx=e.clientX; ly=e.clientY;
-    if(m===homeMap && moved>4){ state.homeUserMoved=true; markHome(); }
+    if(m===homeMap){ state.homeUserMoved=true; markHome(); }
   });
   el.addEventListener("wheel", function(e){ e.preventDefault();
     if(m===homeMap) m.zoomBy(e.deltaY<0?1.12:1/1.12, e.clientX-el.getBoundingClientRect().left, e.clientY-el.getBoundingClientRect().top);
-    else { m.setMode("manual"); m.zoomBy(e.deltaY<0?1.12:1/1.12); }
+    else m.zoomBy(e.deltaY<0?1.12:1/1.12);   // stays in FOLLOW: zooming is not leaving
     if(m===homeMap){ state.homeUserMoved=true; markHome(); } }, {passive:false});
   el.addEventListener("touchstart", function(e){ if(e.touches[0]){ lx=e.touches[0].clientX; ly=e.touches[0].clientY; } });
   el.addEventListener("touchmove", function(e){
@@ -1769,8 +1801,7 @@ homeMapEl.addEventListener("click", function(e){
 function tickClock(){ const d=new Date(); $("clockChip").textContent=fmtClock(d)+":"+String(d.getSeconds()).padStart(2,"0"); }
 setInterval(tickClock,1000); tickClock();
 $("soundBtn").addEventListener("click", function(){ state.sound=!state.sound; save(); paintChrome(); });
-$("voiceBtn").addEventListener("click", function(){ state.voice=!state.voice; save(); paintChrome();
-  if(state.voice) say("Pilot announcements on."); });
+$("voiceBtn").addEventListener("click", function(){ state.voice=!state.voice; save(); paintChrome(); });
 $("timeSlider").addEventListener("input", function(){ setSlider(+$("timeSlider").value, true); });
 $("bookBtn").addEventListener("click", function(){ if(state.dest){ renderPass(); show("pass"); } });
 function paintChrome(){
@@ -1800,7 +1831,7 @@ window.addEventListener("keydown", function(e){
 if(window.ResizeObserver){
   new ResizeObserver(function(){ sizeBars();
     if(state.screen==="home"){ homeMap.size(); fitHomeIfNeeded(); drawHome(); }
-    if(state.screen==="flight"){ flightMap.size(); } }).observe(document.body);
+    if(state.screen==="flight"){ flightMap.size(); if(flightMap.mode==="track") flightMap.jump(); } }).observe(document.body);
 }
 function frame(now){
   const dt=Math.min(0.05,(now-state.lastNow)/1000)||0;
@@ -1818,7 +1849,6 @@ function frame(now){
       $("breakTxt").textContent=fmtDur(left);
       if(left<=0.05){
         tPause(state.brk); state.breakState="done";
-        chime(); say("Break complete. Ready for the next flight.");
         paintBreak();
       }
     }
@@ -1855,6 +1885,8 @@ window.TOOL = {
   follow:function(){ flightMap.setMode("track"); },
   overview:function(){ fitFlightRoute(); },
   get voiceLog(){ return voiceLog; },
+  get voiceName(){ return voice? voice.name : null; },
+  pickVoice:pickVoice,
   get said(){ return Object.keys(said); },
   airports:function(){ return allAirports(); },
   findAirport:findAirport, legTo:legTo, nearby:nearbyDestinations,

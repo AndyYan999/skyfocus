@@ -28,13 +28,30 @@ polygons and a 1,149-airport database are embedded, so nothing is fetched at run
    so the direction of travel always points straight up the screen, with the aircraft held at
    the centre — the nose-up carriage map you get in a car, but for a great-circle track. A
    compass rose in the corner shows where north is, and the HUD reads out `TRACK` (degrees from
-   north) and `VIEW`. `FIT` switches to a north-up overview of the whole route, `◎` re-acquires
-   the aircraft, and dragging the map drops it into a free north-up mode. The progress bar under
-   the flight keeps its own aircraft pointing along the direction of travel. A pilot voice
-   announces the flight: boarding and doors closed, "airborne, climbing to flight level three
-   eight zero", cruising, descent, and arrival — each preceded by a cabin chime. Voice can be
-   muted separately from the chime, and if speech synthesis is unavailable it falls back to
-   chimes.
+   north) and `VIEW`. `FIT` switches to a north-up overview of the whole route and `◎` returns
+   to following.
+
+   **The orientation survives everything you do to the window.** Clicking, double-clicking,
+   scrolling to zoom and resizing the window all leave the view heading-up and centred: the
+   pointer only counts as a drag after 6 px of travel, wheel zoom is a zoom rather than a
+   reason to stop following, and a resize re-snaps the camera instead of loosening it. A real
+   drag does hand control over — but it pans *within* the heading-up frame (`VIEW: PANNED`,
+   aircraft off-centre, nose still up), so the map is never yanked back to north-up. That last
+   part was a genuine bug: a one-pixel click used to drop out of follow mode and snap the
+   rotation to north.
+
+   **Pilot.** Two call-outs per flight, at departure and landing only — everything else is
+   silent (no chatter while cruising, pausing or on a break). Each is a real PA pattern: the
+   cabin chime, one line, a beat, then the second line. Departure: "Cabin crew, doors for
+   departure." … "Welcome aboard Focus Airways, flight 9 4 0 3, service to London. Today's
+   session is 30 minutes of physics. Please stow your distractions, and enjoy the flight."
+   Landing: "Ladies and gentlemen, we have just landed at London." … "Thank you for flying with
+   us. That was 30 minutes of physics logged. Local time is 4:40 PM." The voice is chosen from
+   the system's natural voices by name (Samantha, Serena, Karen, Google/Microsoft voices…)
+   rather than the default, spoken at 0.95 rate and normal pitch, and the flight number is
+   spoken digit by digit. If speech synthesis is unavailable it falls back to the chime; the
+   chime can be muted separately from the voice. The progress bar under the flight keeps its own
+   aircraft pointing along the direction of travel.
 
    **Smoothness.** The camera eases toward its target (position, zoom and rotation, exponential
    approach) instead of jumping, so switching between follow, overview and manual glides rather
@@ -92,7 +109,9 @@ Drag to pan, wheel to zoom, `＋ / − / FIT` on the map. `LOGBOOK` and `?` open
 |---|---|
 | `FOLLOW` (default) | centred on the aircraft, rotated so its track points up |
 | `OVERVIEW` (`FIT`) | north up, whole route framed |
-| `MANUAL` (drag / wheel) | north up, free pan and zoom |
+| `PANNED` (drag) | free pan, still rotated so the track points up |
+
+Wheel zoom keeps you in `FOLLOW`; clicks and window resizes cannot knock the view out of it.
 
 The rotation is computed from the aircraft's own projected direction of travel, so "up" on the
 screen is the projected track — checked in the browser at several points along a flight: the
